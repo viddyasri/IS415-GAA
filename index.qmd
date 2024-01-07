@@ -4,4 +4,6 @@ title: "IS415-GAA"
 
 Welcome to **IS415 Geospatial Analytics and Application!**
 
-As a student of this module in this current semester, you will be able to find my coursework on this website.
+You will be able to find my coursework for this module on this website.
+
+[Github](https://github.com/viddyasri)
