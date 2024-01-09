@@ -6,4 +6,3 @@ Welcome to **IS415 Geospatial Analytics and Application!**
 
 You will be able to find my coursework for this module on this website.
 
-[Github](https://github.com/viddyasri)

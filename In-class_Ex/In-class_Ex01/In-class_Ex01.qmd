@@ -1,0 +1,6 @@
+---
+title: "In-class Exercise 1"
+execute: 
+  warning: false
+date: "`r Sys.Date()`"
+---

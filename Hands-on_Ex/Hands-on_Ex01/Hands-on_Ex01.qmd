@@ -3,6 +3,12 @@ title: "Hands-on Exercise 1"
 execute: 
   warning: false
 date: "`r Sys.Date()`"
+format:
+  html:
+    code-fold: true
+    code-tools: true
+    code-summary: "Show code"
+highlight-style: nord
 ---
 
 ## **1. Getting Started**
