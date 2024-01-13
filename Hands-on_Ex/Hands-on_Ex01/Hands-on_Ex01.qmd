@@ -5,8 +5,8 @@ execute:
 date: "`r Sys.Date()`"
 format:
   html:
-    code-fold: true
-    code-tools: true
+    code-fold: false
+    code-tools: false
     code-summary: "Show code"
 highlight-style: dracula
 ---
