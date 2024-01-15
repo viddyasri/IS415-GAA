@@ -80,9 +80,10 @@ write_rds(destination_df, "../../data/rds/destination_df.rds")
 ```
 
 ::: {.callout-note}
-To import data :
-origin_df <- read_rds("../../data/rds/origin_df.rds")
+To import data use read_rds
 :::
 
-## **5. Visualizing Frequency Distribution**
-
+```{r}
+read_rds("../../data/rds/origin_df.rds")
+read_rds("../../data/rds/destination_df.rds")
+```
