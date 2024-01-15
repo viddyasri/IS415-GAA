@@ -1,0 +1,33 @@
+---
+title: "R for Geospatial Data Science"
+execute: 
+  warning: false
+date: "`r Sys.Date()`"
+format:
+  html:
+    code-fold: false
+    code-tools: false
+    code-summary: "Show code"
+highlight-style: dracula
+---
+
+## **1. Getting Started**
+
+#### Installing relevant packages
+
+In this exercise, the following packages will be used:
+
+-   arrow
+
+-   lubridate
+
+-   tidyverse
+
+-   tmap
+
+-   sf
+
+```{r}
+pacman::p_load(arrow, lubridate, tmap, sf, tidyverse)
+```
+
