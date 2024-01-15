@@ -31,3 +31,58 @@ In this exercise, the following packages will be used:
 pacman::p_load(arrow, lubridate, tmap, sf, tidyverse)
 ```
 
+## **2. Importing GrabPosisi Dataset**
+
+The code below imports the parquet file using a function of the ***arrow*** package.
+
+```{r}
+df <- read_parquet("../../data/GrabPosisi/part-00000.parquet")
+```
+
+Convert the data type of *pingtimestamp* from character to date-time.
+
+```{r}
+df$pingtimestamp <- as_datetime(df$pingtimestamp)
+```
+
+## **3. Extracting Trip Starting Locations**
+
+Here, we derive 3 new columns for weekday, starting hour and day of the month.
+
+```{r}
+origin_df <- df %>% #use df
+  group_by(trj_id) %>% #group according to trj_id
+  arrange(pingtimestamp) %>% #sort according to timestamp asc (default)
+  filter(row_number()==1) %>% #the first coordinate for every trip should be the origin
+  mutate(weekday = wday(pingtimestamp, label=TRUE, abbr=TRUE),
+         start_hr = factor(hour(pingtimestamp)),
+         day = factor(mday(pingtimestamp)))
+```
+
+## **4. Extracting Trip Ending Locations**
+
+Next, we do the same thing as point 3 but for trip ending locations.
+
+```{r}
+destination_df <- df %>% #use df
+  group_by(trj_id) %>% #group according to trj_id
+  arrange(desc(pingtimestamp)) %>% #sort according to timestamp 
+  filter(row_number()==1) %>% #the first coordinate for every trip should be the origin
+  mutate(weekday = wday(pingtimestamp, label=TRUE, abbr=TRUE),
+         start_hr = factor(hour(pingtimestamp)),
+         day = factor(mday(pingtimestamp)))
+```
+
+```{r}
+write_rds(origin_df, "../../data/rds/origin_df.rds")
+write_rds(destination_df, "../../data/rds/destination_df.rds")
+
+```
+
+::: {.callout-note}
+To import data :
+origin_df <- read_rds("../../data/rds/origin_df.rds")
+:::
+
+## **5. Visualizing Frequency Distribution**
+

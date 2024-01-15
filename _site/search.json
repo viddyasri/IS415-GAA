@@ -117,5 +117,33 @@
     "title": "R for Geospatial Data Science",
     "section": "",
     "text": "In this exercise, the following packages will be used:\n\narrow\nlubridate\ntidyverse\ntmap\nsf\n\n\npacman::p_load(arrow, lubridate, tmap, sf, tidyverse)"
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex02/In-class_Ex02.html#importing-grabposisi-dataset",
+    "href": "In-class_Ex/In-class_Ex02/In-class_Ex02.html#importing-grabposisi-dataset",
+    "title": "R for Geospatial Data Science",
+    "section": "2. Importing GrabPosisi Dataset",
+    "text": "2. Importing GrabPosisi Dataset\nThe code below imports the parquet file using a function of the arrow package.\n\ndf &lt;- read_parquet(\"../../data/GrabPosisi/part-00000.parquet\")\n\nConvert the data type of pingtimestamp from character to date-time.\n\ndf$pingtimestamp &lt;- as_datetime(df$pingtimestamp)"
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex02/In-class_Ex02.html#extracting-trip-starting-locations",
+    "href": "In-class_Ex/In-class_Ex02/In-class_Ex02.html#extracting-trip-starting-locations",
+    "title": "R for Geospatial Data Science",
+    "section": "3. Extracting Trip Starting Locations",
+    "text": "3. Extracting Trip Starting Locations\nHere, we derive 3 new columns for weekday, starting hour and day of the month.\n\norigin_df &lt;- df %&gt;% #use df\n  group_by(trj_id) %&gt;% #group according to trj_id\n  arrange(pingtimestamp) %&gt;% #sort according to timestamp asc (default)\n  filter(row_number()==1) %&gt;% #the first coordinate for every trip should be the origin\n  mutate(weekday = wday(pingtimestamp, label=TRUE, abbr=TRUE),\n         start_hr = factor(hour(pingtimestamp)),\n         day = factor(mday(pingtimestamp)))"
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex02/In-class_Ex02.html#extracting-trip-ending-locations",
+    "href": "In-class_Ex/In-class_Ex02/In-class_Ex02.html#extracting-trip-ending-locations",
+    "title": "R for Geospatial Data Science",
+    "section": "4. Extracting Trip Ending Locations",
+    "text": "4. Extracting Trip Ending Locations\nNext, we do the same thing as point 3 but for trip ending locations.\n\ndestination_df &lt;- df %&gt;% #use df\n  group_by(trj_id) %&gt;% #group according to trj_id\n  arrange(desc(pingtimestamp)) %&gt;% #sort according to timestamp \n  filter(row_number()==1) %&gt;% #the first coordinate for every trip should be the origin\n  mutate(weekday = wday(pingtimestamp, label=TRUE, abbr=TRUE),\n         start_hr = factor(hour(pingtimestamp)),\n         day = factor(mday(pingtimestamp)))\n\n\nwrite_rds(origin_df, \"../../data/rds/origin_df.rds\")\nwrite_rds(destination_df, \"../../data/rds/destination_df.rds\")\n\n\n\n\n\n\n\nNote\n\n\n\nTo import data : origin_df &lt;- read_rds(“../../data/rds/origin_df.rds”)"
+  },
+  {
+    "objectID": "In-class_Ex/In-class_Ex02/In-class_Ex02.html#visualizing-frequency-distribution",
+    "href": "In-class_Ex/In-class_Ex02/In-class_Ex02.html#visualizing-frequency-distribution",
+    "title": "R for Geospatial Data Science",
+    "section": "5. Visualizing Frequency Distribution",
+    "text": "5. Visualizing Frequency Distribution"
   }
 ]
