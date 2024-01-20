@@ -9,8 +9,7 @@ about:
       href: https://www.linkedin.com/in/viddyasrisubramaniam/
     - icon: github
       text: Github
-      href: https://github.com/viddyasri
+      href: https://github.com
 ---
 
 Hello there! I'm Viddya, a final year computer science student on an exciting journey through the realm of geospatial analytics and applications. Welcome to my corner of the internet, where I document my entire learning process and knowledge gained along the way.
-
