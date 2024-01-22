@@ -1,0 +1,263 @@
+---
+title: "Take-home Exercise 1: Application of Spatial Point Patterns Analysis to discover the geographical distribution of Grab hailing services in Singapore"
+execute: 
+  warning: false
+date: "`r Sys.Date()`"
+highlight-style: dracula
+---
+
+## **1. Overview**
+
+Human mobility, defined as the movement of persons through space and time, provides important insights into the spatial and temporal elements of human activity.
+
+This study intends to use appropriate spatial point pattern analysis methods to reveal the geographical and spatiotemporal distribution of Grab hailing service locations in Singapore. This would further improve our understanding of how Grab services are spatially dispersed and evolve over time, providing useful insights for informed decision-making in the field of smart city planning.
+
+## **2. The Data**
+
+This study will utilize three datasets, namely:
+
+-   Grab-Posisi data for Singapore
+
+-   Road dataset sourced from OpenStreetMap
+
+-   Master Plan 2019 Subzone Boundary (Excluding Sea) from Data.gov.sg.
+
+## **3. Installation and Loading of Packages**
+
+The R packages that will be used in this study are:
+
+-   **sf:** for importing, managing, and processing geospatial data
+
+-   **tidyverse:** for performing data science tasks
+
+-   **tmap:** for plotting cartographic quality static point patterns maps or interactive maps by using leaflet API
+
+-   **raster:** reads, writes, manipulates, analyses and model of gridded spatial data
+
+-   **spatstat:** has a wide range of useful functions for point pattern analysis
+
+-   **maptools:** for manipulating geographic data
+
+-   **spNetwork:** for performing spatial analysis on networks
+
+-   **classInt:** for choosing univariate class intervals for mapping or other graphics purposes.
+
+-   **viridis:** for generating the color maps in base R
+
+-   **arrow:** for a wide range of data analysis tasks
+
+-   **lubridate:** provides functions for working with dates and times
+
+-   **dplyr:** for wrangling data 
+
+```{r}
+#| eval: false
+install.packages("maptools", repos = "https://packagemanager.posit.co/cran/2023-10-13")
+```
+
+```{r}
+pacman::p_load(sf, tidyverse, tmap, raster, spatstat, maptools, spNetwork, classInt, viridis, arrow, lubridate, dplyr)
+```
+
+## **4. Import Data**
+
+### 4.1 Grab-Posisi data
+
+The ***read_parquet()*** function is associated with the ***arrow*** package in R. This function is used to read data from a Parquet file. However, it is important to note that the current data is aspatial and is not in the sf tibble data frame format. The data will be converted at a later stage in this study.
+
+```{r}
+df <- read_parquet("../../data/GrabPosisi/part-00000.parquet")
+```
+
+```{r}
+glimpse(df)
+```
+
+### 4.2 Road dataset
+
+The ***st_read()*** function is associated with the ***sf*** package in R. This function is used to read spatial data from various formats. When using the st_read function to read a shapefile, there is no need to explicitly specify the file format. 
+
+```{r}
+road_sf <- st_read(dsn = "../../data", 
+                layer = "gis_osm_roads_free_1")
+```
+
+```{r}
+glimpse(road_sf)
+```
+
+### 4.3 Master Plan 2019 Subzone Boundary (Excluding Sea)
+
+When using the st_read function to read a file that is not shapefile, it is necessary to explicitly specify the file format. 
+
+```{r}
+mpsb_sf <- st_read("../../data/MasterPlan2019SubzoneBoundaryNoSeaKML.kml")
+```
+
+```{r}
+glimpse(mpsb_sf)
+```
+
+::: {.callout-note}
+Notice that the Master Plan 2019 Subzone Boundary (Excluding Sea) data includes the Z dimension.
+:::
+
+## **5. Converting Aspatial Data to Geospatial Data**
+
+In this section, we will be preparing Grab taxi location points by origins and converting them into sf tibble data frames.
+
+### 5.1 Convert integer to datetime format
+
+In the previous section, when loading the data and inspecting its structure using the glimpse function, it's clear that the pingtimestamp column is saved as an integer. Working with time-related data in raw integer format can be difficult since it lacks context. 
+
+To address this issue, the ***as_datetime()*** method from the ***lubridate*** package is used. This function is intended to convert different date and time representations, including integers, into datetime format.
+
+```{r}
+df$pingtimestamp <- as_datetime(df$pingtimestamp)
+```
+
+```{r}
+glimpse(df)
+```
+
+### 5.2 Extracting location points by origin
+
+Next, to prepare the Grab taxi location points by origin, we use the code below:
+
+```{r}
+origin_df <- df %>% 
+  group_by(trj_id) %>% 
+  arrange(pingtimestamp) %>% 
+  filter(row_number()==1) %>% 
+  mutate(weekday = wday(pingtimestamp, label=TRUE, abbr=TRUE),
+         start_hr = factor(hour(pingtimestamp)),
+         day = factor(mday(pingtimestamp)))
+```
+
+-   **group_by(trj_id):** the data frame is grouped based on the unique trip identifiers (trj_id).
+
+-   **arrange(pingtimestamp):** within each trip group, the rows are arranged in ascending order based on the timestamp. This sorts the data in chronological order for each trip.
+
+-   **filter(row_number()==1):** for each trip group, only the row with the first coordinate is retained. This captures the origin of each trip.
+
+-   **mutate function:** is used to create additional columns that provide contextual information about each trip's starting location.
+
+### 5.3 Converting to sf tibble data frame
+
+In this section, we transform origin_df into an sf tibble data frame using the st_as_sf function.
+
+```{r}
+origin_sf <- st_as_sf(origin_df, coords = c("rawlat", "rawlng"), crs = 3414)
+```
+
+```{r}
+glimpse(origin_sf)
+```
+
+::: callout-note
+Notice that a new geometry column has appeared.
+:::
+
+```{r}
+st_geometry(origin_sf)
+```
+
+## **6. Data Wrangling**
+
+### 6.1 Dropping Z dimensions
+
+Based on the information in previous sections,  we can see that among the three data frames, mpsb_sf possesses a Z dimension. To address this, we will utilize the st_zm() function, which is used to remove Zand/or M dimensions from feature geometries, resetting classes appropriately.
+
+```{r}
+mpsb_sf <- st_zm(mpsb_sf)
+```
+
+```{r}
+st_geometry(mpsb_sf)
+```
+
+### 6.2 Handle invalid geometries
+
+Next, we check for invalid geometries and handle them accordingly.
+
+::: {.panel-tabset}
+
+## Grab-Posisi
+
+```{r}
+length(which(st_is_valid(origin_sf) == FALSE))
+```
+
+## Road Data
+
+```{r}
+length(which(st_is_valid(road_sf) == FALSE))
+```
+
+## MPSB Data
+
+```{r}
+length(which(st_is_valid(mpsb_sf) == FALSE))
+```
+
+As shown above, the MPSB data has 6 invalid geometries. To address this we use the ***st_make_valid*** function. This will result in the invalid geometries being removed.
+
+```{r}
+mpsb_sf <- st_make_valid(mpsb_sf)
+length(which(st_is_valid(mpsb_sf) == FALSE))
+```
+
+:::
+
+### 6.3 Projection system transformation
+
+All spatial data must be projected into EPSG:3414, which is a projected coordinate system specific to Singapore. Now, we verify whether the current projected CRS of the data is correct and if necessary, transform them.
+
+::: {.panel-tabset}
+
+## Grab-Posisi
+
+```{r}
+st_crs(origin_sf)
+```
+
+## Road Data
+
+```{r}
+st_crs(road_sf)
+```
+
+The data is not in EPSG:3414, therefore, we do a transformation to assign it the right code.
+
+```{r}
+road_sf <- st_set_crs(road_sf, 3414)
+st_crs(road_sf)
+```
+
+## MPSB Data
+
+```{r}
+st_crs(mpsb_sf)
+```
+
+The data is not in EPSG:3414, therefore, we do a transformation to assign it the right code.
+
+```{r}
+mpsb_sf <- st_set_crs(mpsb_sf, 3414)
+st_crs(mpsb_sf)
+```
+
+:::
+
+### 6.4 Preparing Singapore boundary layer
+
+explain here
+
+```{r}
+sg_sf <- mpsb_sf %>%
+  st_union() 
+```
+
+```{r}
+plot(sg_sf)
+```
