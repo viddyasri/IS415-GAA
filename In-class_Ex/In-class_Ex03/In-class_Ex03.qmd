@@ -1,0 +1,129 @@
+---
+title: "Kernel Density Estimation"
+execute: 
+  warning: false
+date: "`r Sys.Date()`"
+format:
+  html:
+    code-fold: false
+    code-tools: false
+    code-summary: "Show code"
+highlight-style: dracula
+---
+
+## **1. Getting Started**
+
+#### Installing relevant packages
+
+```{r}
+#| eval: false
+install.packages("maptools", repos = "https://packagemanager.posit.co/cran/2023-10-13")
+```
+
+```{r}
+pacman::p_load(maptools, sf, raster, spatstat, tmap, tidyverse)
+```
+
+## **2. Spatial Data Wrangling**
+
+#### Importing the spatial data
+
+```{r}
+childcare_sf <- st_read("../../Hands-on_Ex/Hands-on_Ex03/data/ChildCareServices.geojson") %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+mpsz_sf <- st_read(dsn = "../../Hands-on_Ex/Hands-on_Ex03/data", 
+                layer = "MP14_SUBZONE_WEB_PL")
+```
+
+#### Creating the coastal outline
+
+```{r}
+#get the outline by dissolving the boundaries, merge everything
+#use st_union to make sure you only have one polygon
+sg_sf <- mpsz_sf %>%
+  st_union() 
+```
+
+```{r}
+plot(sg_sf)
+```
+
+## **3. Geospatial Data Wrangling**
+
+#### Creating ppp objects: sf method
+
+```{r}
+#ppp objects can be used with spatstat
+childcare_ppp <- as.ppp(childcare_sf)
+```
+
+```{r}
+summary(childcare_ppp)
+```
+
+```{r}
+plot(childcare_ppp)
+```
+
+#### Handling duplication
+
+```{r}
+any(duplicated(childcare_ppp))
+```
+
+```{r}
+#jitter
+childcare_ppp_jit <- rjitter(childcare_ppp, 
+                             retry=TRUE, 
+                             nsim=1, 
+                             drop=TRUE)
+```
+
+```{r}
+any(duplicated(childcare_ppp_jit))
+```
+
+#### Create owin object
+
+```{r}
+#owin is to specify the area which we want to analyse, to be used with spatstat
+sg_owin <- as.owin(sg_sf)
+```
+
+```{r}
+summary(sg_owin)
+```
+
+#### Combining point events object and owin object
+
+```{r}
+childcareSG_ppp <- childcare_ppp[sg_owin]
+```
+
+## **4. Comparing Spatial Point Patterns using KDE**
+
+#### Extracting Target Plan Areas
+
+```{r}
+pg <- mpsz_sf %>%
+  filter(PLN_AREA_N == "PUNGGOL")
+tm <- mpsz_sf %>%
+  filter(PLN_AREA_N == "TAMPINES")
+ck <- mpsz_sf %>%
+  filter(PLN_AREA_N == "CHOA CHU KANG")
+jw <- mpsz_sf %>%
+  filter(PLN_AREA_N == "JURONG WEST")
+```
+
+#### Plotting target planning areas
+
+```{r}
+par(mfrow=c(2,2))
+plot(pg, main = "Punggol")
+plot(tm, main = "Tampines")
+plot(ck, main = "Choa Chu Kang")
+plot(jw, main = "Jurong West")
+```

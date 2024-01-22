@@ -489,6 +489,7 @@ tm_shape(kde_childcareSG_bw_raster) +
 **Extract the target planning areas:**
 
 ```{r}
+#must be sp layer to do this
 pg = mpsz[mpsz@data$PLN_AREA_N == "PUNGGOL",]
 tm = mpsz[mpsz@data$PLN_AREA_N == "TAMPINES",]
 ck = mpsz[mpsz@data$PLN_AREA_N == "CHOA CHU KANG",]
@@ -499,7 +500,7 @@ jw = mpsz[mpsz@data$PLN_AREA_N == "JURONG WEST",]
 
 ```{r}
 par(mfrow=c(2,2))
-plot(pg, main = "Ponggol")
+plot(pg, main = "Punggol")
 plot(tm, main = "Tampines")
 plot(ck, main = "Choa Chu Kang")
 plot(jw, main = "Jurong West")
