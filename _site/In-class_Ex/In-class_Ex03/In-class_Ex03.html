@@ -8,7 +8,7 @@
 
 <meta name="dcterms.date" content="2024-01-22">
 
-<title>IS415-GAA - Kernel Density Estimation</title>
+<title>IS415-GAA - KDE &amp; NKDE</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -177,10 +177,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#getting-started" id="toc-getting-started" class="nav-link active" data-scroll-target="#getting-started"><strong>1. Getting Started</strong></a></li>
+  <li><a href="#kernel-density-estimation" id="toc-kernel-density-estimation" class="nav-link active" data-scroll-target="#kernel-density-estimation">Kernel Density Estimation</a>
+  <ul class="collapse">
+  <li><a href="#getting-started" id="toc-getting-started" class="nav-link" data-scroll-target="#getting-started"><strong>1. Getting Started</strong></a></li>
   <li><a href="#spatial-data-wrangling" id="toc-spatial-data-wrangling" class="nav-link" data-scroll-target="#spatial-data-wrangling"><strong>2. Spatial Data Wrangling</strong></a></li>
   <li><a href="#geospatial-data-wrangling" id="toc-geospatial-data-wrangling" class="nav-link" data-scroll-target="#geospatial-data-wrangling"><strong>3. Geospatial Data Wrangling</strong></a></li>
   <li><a href="#comparing-spatial-point-patterns-using-kde" id="toc-comparing-spatial-point-patterns-using-kde" class="nav-link" data-scroll-target="#comparing-spatial-point-patterns-using-kde"><strong>4. Comparing Spatial Point Patterns using KDE</strong></a></li>
+  </ul></li>
+  <li><a href="#network-constrained-kernel-density-estimation" id="toc-network-constrained-kernel-density-estimation" class="nav-link" data-scroll-target="#network-constrained-kernel-density-estimation">Network Constrained Kernel Density Estimation</a>
+  <ul class="collapse">
+  <li><a href="#getting-started-1" id="toc-getting-started-1" class="nav-link" data-scroll-target="#getting-started-1"><strong>1. Getting Started</strong></a></li>
+  <li><a href="#data-import-and-preparation" id="toc-data-import-and-preparation" class="nav-link" data-scroll-target="#data-import-and-preparation"><strong>2. Data Import and Preparation</strong></a></li>
+  <li><a href="#visualising-the-geospatial-data" id="toc-visualising-the-geospatial-data" class="nav-link" data-scroll-target="#visualising-the-geospatial-data"><strong>3. Visualising the Geospatial Data</strong></a></li>
+  <li><a href="#network-constrained-kde-netkde-analysis" id="toc-network-constrained-kde-netkde-analysis" class="nav-link" data-scroll-target="#network-constrained-kde-netkde-analysis"><strong>4. Network Constrained KDE (NetKDE) Analysis</strong></a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -189,7 +199,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Kernel Density Estimation</h1>
+<h1 class="title">KDE &amp; NKDE</h1>
 </div>
 
 
@@ -210,6 +220,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </header>
 
+<section id="kernel-density-estimation" class="level1">
+<h1>Kernel Density Estimation</h1>
 <section id="getting-started" class="level2">
 <h2 class="anchored" data-anchor-id="getting-started"><strong>1. Getting Started</strong></h2>
 <section id="installing-relevant-packages" class="level4">
@@ -469,8 +481,151 @@ Fraction of frame area: 0.422</code></pre>
 <p><img src="In-class_Ex03_files/figure-html/unnamed-chunk-17-4.png" class="img-fluid" width="672"></p>
 </div>
 </div>
+</section>
+</section>
+</section>
+<section id="network-constrained-kernel-density-estimation" class="level1">
+<h1>Network Constrained Kernel Density Estimation</h1>
+<section id="getting-started-1" class="level2">
+<h2 class="anchored" data-anchor-id="getting-started-1"><strong>1. Getting Started</strong></h2>
+<section id="installing-relevant-packages-1" class="level4">
+<h4 class="anchored" data-anchor-id="installing-relevant-packages-1">Installing relevant packages</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, spNetwork, tmap, classInt, viridis, tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="data-import-and-preparation" class="level2">
+<h2 class="anchored" data-anchor-id="data-import-and-preparation"><strong>2. Data Import and Preparation</strong></h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>network <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn=</span><span class="st">"data/geospatial"</span>, </span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">layer=</span><span class="st">"Punggol_St"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `Punggol_St' from data source 
+  `C:\viddyasri\IS415-GAA\In-class_Ex\In-class_Ex03\data\geospatial' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 2642 features and 2 fields
+Geometry type: LINESTRING
+Dimension:     XY
+Bounding box:  xmin: 34038.56 ymin: 40941.11 xmax: 38882.85 ymax: 44801.27
+Projected CRS: SVY21 / Singapore TM</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>childcare <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn=</span><span class="st">"data/geospatial"</span>,</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>                     <span class="at">layer=</span><span class="st">"Punggol_CC"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `Punggol_CC' from data source 
+  `C:\viddyasri\IS415-GAA\In-class_Ex\In-class_Ex03\data\geospatial' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 61 features and 1 field
+Geometry type: POINT
+Dimension:     XYZ
+Bounding box:  xmin: 34423.98 ymin: 41503.6 xmax: 37619.47 ymax: 44685.77
+z_range:       zmin: 0 zmax: 0
+Projected CRS: SVY21 / Singapore TM</code></pre>
+</div>
+</div>
+<p>Print the content of network SpatialLineDataFrame and childcare SpatialPointsDataFrame by using the code below:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(network)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Classes 'sf' and 'data.frame':  2642 obs. of  3 variables:
+ $ LINK_ID : num  1.16e+08 1.16e+08 1.16e+08 1.16e+08 1.16e+08 ...
+ $ ST_NAME : chr  "PUNGGOL RD" "PONGGOL TWENTY-FOURTH AVE" "PONGGOL SEVENTEENTH AVE" "PONGGOL SEVENTEENTH AVE" ...
+ $ geometry:sfc_LINESTRING of length 2642; first list element:  'XY' num [1:2, 1:2] 36547 36559 44575 44614
+ - attr(*, "sf_column")= chr "geometry"
+ - attr(*, "agr")= Factor w/ 3 levels "constant","aggregate",..: NA NA
+  ..- attr(*, "names")= chr [1:2] "LINK_ID" "ST_NAME"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(childcare)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Classes 'sf' and 'data.frame':  61 obs. of  2 variables:
+ $ Name    : chr  "kml_10" "kml_99" "kml_100" "kml_101" ...
+ $ geometry:sfc_POINT of length 61; first list element:  'XYZ' num  36174 42550 0
+ - attr(*, "sf_column")= chr "geometry"
+ - attr(*, "agr")= Factor w/ 3 levels "constant","aggregate",..: NA
+  ..- attr(*, "names")= chr "Name"</code></pre>
+</div>
+</div>
+</section>
+<section id="visualising-the-geospatial-data" class="level2">
+<h2 class="anchored" data-anchor-id="visualising-the-geospatial-data"><strong>3. Visualising the Geospatial Data</strong></h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">'plot'</span>)</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(childcare) <span class="sc">+</span> </span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>() <span class="sc">+</span> </span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(network) <span class="sc">+</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="In-class_Ex03_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co">#tmap_mode('plot')</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="network-constrained-kde-netkde-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="network-constrained-kde-netkde-analysis"><strong>4. Network Constrained KDE (NetKDE) Analysis</strong></h2>
+<section id="preparing-the-lixels-objects" class="level4">
+<h4 class="anchored" data-anchor-id="preparing-the-lixels-objects">Preparing the lixels objects</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>lixels <span class="ot">&lt;-</span> <span class="fu">lixelize_lines</span>(network, </span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>                         <span class="dv">750</span>, </span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>                         <span class="at">mindist =</span> <span class="dv">375</span>) <span class="co">#mindist is half of 750 (mid distance)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The length of a lixel, lx_length is set to 750m, and The minimum length of a lixel, mindist is set to 375m.</p>
+</section>
+<section id="generating-line-centre-points" class="level4">
+<h4 class="anchored" data-anchor-id="generating-line-centre-points">Generating line centre points</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">lines_center</span>(lixels)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The points are located at center of the line based on the length of the line.</p>
+</section>
+<section id="performing-netkde" class="level4">
+<h4 class="anchored" data-anchor-id="performing-netkde">Performing NetKDE</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>densities <span class="ot">&lt;-</span> <span class="fu">nkde</span>(network, </span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>                  <span class="at">events =</span> childcare,</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>                  <span class="at">w =</span> <span class="fu">rep</span>(<span class="dv">1</span>,<span class="fu">nrow</span>(childcare)),</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>                  <span class="at">samples =</span> samples,</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>                  <span class="at">kernel_name =</span> <span class="st">"quartic"</span>,</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>                  <span class="at">bw =</span> <span class="dv">300</span>, </span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>                  <span class="at">div=</span> <span class="st">"bw"</span>, </span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>                  <span class="at">method =</span> <span class="st">"simple"</span>, </span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>                  <span class="at">digits =</span> <span class="dv">1</span>, </span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tol =</span> <span class="dv">1</span>,</span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>                  <span class="at">grid_shape =</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>), </span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a>                  <span class="at">max_depth =</span> <span class="dv">8</span>,</span>
+<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>                  <span class="at">agg =</span> <span class="dv">5</span>, <span class="co">#we aggregate events within a 5m radius (faster calculation)</span></span>
+<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a>                  <span class="at">sparse =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb40-15"><a href="#cb40-15" aria-hidden="true" tabindex="-1"></a>                  <span class="at">verbose =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="visualising-netkde" class="level4">
+<h4 class="anchored" data-anchor-id="visualising-netkde">Visualising NetKDE</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co">#insert the computed density values (i.e. densities) into samples and lixels objects as density field.</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>samples<span class="sc">$</span>density <span class="ot">&lt;-</span> densities</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>lixels<span class="sc">$</span>density <span class="ot">&lt;-</span> densities</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># rescaling to help the mapping</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>samples<span class="sc">$</span>density <span class="ot">&lt;-</span> samples<span class="sc">$</span>density<span class="sc">*</span><span class="dv">1000</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>lixels<span class="sc">$</span>density <span class="ot">&lt;-</span> lixels<span class="sc">$</span>density<span class="sc">*</span><span class="dv">1000</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">'plot'</span>)</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(lixels)<span class="sc">+</span></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="at">col=</span><span class="st">"density"</span>)<span class="sc">+</span></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(childcare)<span class="sc">+</span></span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="In-class_Ex03_files/figure-html/unnamed-chunk-28-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
 
 
+</section>
 </section>
 </section>
 
