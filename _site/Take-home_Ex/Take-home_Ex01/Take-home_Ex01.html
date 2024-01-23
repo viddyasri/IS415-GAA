@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2024-01-23">
+<meta name="dcterms.date" content="2024-01-24">
 
 <title>IS415-GAA - Take-home Exercise 1: Application of Spatial Point Patterns Analysis to discover the geographical distribution of Grab hailing services in Singapore</title>
 <style>
@@ -209,6 +209,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#handle-invalid-geometries" id="toc-handle-invalid-geometries" class="nav-link" data-scroll-target="#handle-invalid-geometries">6.2 Handle invalid geometries</a></li>
   <li><a href="#projection-system-transformation" id="toc-projection-system-transformation" class="nav-link" data-scroll-target="#projection-system-transformation">6.3 Projection system transformation</a></li>
   <li><a href="#preparing-singapore-boundary-layer" id="toc-preparing-singapore-boundary-layer" class="nav-link" data-scroll-target="#preparing-singapore-boundary-layer">6.4 Preparing Singapore boundary layer</a></li>
+  <li><a href="#preparing-singapore-road-layer" id="toc-preparing-singapore-road-layer" class="nav-link" data-scroll-target="#preparing-singapore-road-layer">6.5 Preparing Singapore road layer</a></li>
+  <li><a href="#mapping-geospatial-data-sets-with-tmap" id="toc-mapping-geospatial-data-sets-with-tmap" class="nav-link" data-scroll-target="#mapping-geospatial-data-sets-with-tmap">6.6 Mapping geospatial data sets with tmap</a></li>
+  </ul></li>
+  <li><a href="#preparation-before-deriving-kernel-density-estimation" id="toc-preparation-before-deriving-kernel-density-estimation" class="nav-link" data-scroll-target="#preparation-before-deriving-kernel-density-estimation"><strong>7. Preparation before Deriving Kernel Density Estimation</strong></a>
+  <ul class="collapse">
+  <li><a href="#creating-ppp-objects" id="toc-creating-ppp-objects" class="nav-link" data-scroll-target="#creating-ppp-objects">7.1 Creating ppp objects</a></li>
+  <li><a href="#handling-duplicated-points" id="toc-handling-duplicated-points" class="nav-link" data-scroll-target="#handling-duplicated-points">7.2 Handling duplicated points</a></li>
+  <li><a href="#creating-an-owin-object" id="toc-creating-an-owin-object" class="nav-link" data-scroll-target="#creating-an-owin-object">7.3 Creating an owin object</a></li>
+  <li><a href="#combining-point-events-object-and-owin-object" id="toc-combining-point-events-object-and-owin-object" class="nav-link" data-scroll-target="#combining-point-events-object-and-owin-object">7.4 Combining point events object and owin object</a></li>
+  </ul></li>
+  <li><a href="#deriving-kernel-density-estimation" id="toc-deriving-kernel-density-estimation" class="nav-link" data-scroll-target="#deriving-kernel-density-estimation"><strong>9. Deriving Kernel Density Estimation</strong></a>
+  <ul class="collapse">
+  <li><a href="#rescaling-data-from-meter-to-kilometer" id="toc-rescaling-data-from-meter-to-kilometer" class="nav-link" data-scroll-target="#rescaling-data-from-meter-to-kilometer">9.1 Rescaling data from meter to kilometer</a></li>
+  <li><a href="#choosing-bandwidth" id="toc-choosing-bandwidth" class="nav-link" data-scroll-target="#choosing-bandwidth">9.2 Choosing bandwidth</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -229,7 +243,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">January 23, 2024</p>
+      <p class="date">January 24, 2024</p>
     </div>
   </div>
   
@@ -341,11 +355,11 @@ $ geometry &lt;LINESTRING [°]&gt; LINESTRING (103.8301 1.3060..., LINESTRING (1
 <h3 class="anchored" data-anchor-id="master-plan-2019-subzone-boundary-excluding-sea">4.3 Master Plan 2019 Subzone Boundary (Excluding Sea)</h3>
 <p>When using the st_read function to read a file that is not shapefile, it is necessary to explicitly specify the file format.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>mpsb_sf <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"../../data/MasterPlan2019SubzoneBoundaryNoSeaKML.kml"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>mpsb_sf <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"../../data/MasterPlan2019SubzoneBoundaryNoSeaGEOJSON.geojson"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Reading layer `URA_MP19_SUBZONE_NO_SEA_PL' from data source 
-  `C:\viddyasri\IS415-GAA\data\MasterPlan2019SubzoneBoundaryNoSeaKML.kml' 
-  using driver `KML'
+<pre><code>Reading layer `MasterPlan2019SubzoneBoundaryNoSeaGEOJSON' from data source 
+  `C:\viddyasri\IS415-GAA\data\MasterPlan2019SubzoneBoundaryNoSeaGEOJSON.geojson' 
+  using driver `GeoJSON'
 Simple feature collection with 332 features and 2 fields
 Geometry type: MULTIPOLYGON
 Dimension:     XY, XYZ
@@ -429,7 +443,7 @@ $ accuracy      &lt;dbl&gt; 3.900, 4.000, 3.900, 4.000, 3.900, 3.900, 3.000, 3.6
 <h3 class="anchored" data-anchor-id="converting-to-sf-tibble-data-frame">5.3 Converting to sf tibble data frame</h3>
 <p>In this section, we transform origin_df into an sf tibble data frame using the st_as_sf function.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>origin_sf <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(origin_df, <span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"rawlat"</span>, <span class="st">"rawlng"</span>), <span class="at">crs =</span> <span class="dv">3414</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>origin_sf <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(origin_df, <span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"rawlng"</span>, <span class="st">"rawlat"</span>), <span class="at">crs =</span> <span class="dv">3414</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(origin_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -447,7 +461,7 @@ $ accuracy      &lt;dbl&gt; 4.000, 4.000, 8.000, 3.900, 4.000, 10.000, 10.000, 1
 $ weekday       &lt;ord&gt; Mon, Mon, Mon, Mon, Mon, Mon, Mon, Mon, Mon, Mon, Mon, M…
 $ start_hr      &lt;fct&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
 $ day           &lt;fct&gt; 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,…
-$ geometry      &lt;POINT [m]&gt; POINT (1.380403 103.7709), POINT (1.291294 103.862…</code></pre>
+$ geometry      &lt;POINT [m]&gt; POINT (103.7709 1.380403), POINT (103.8627 1.29129…</code></pre>
 </div>
 </div>
 <div class="callout callout-style-default callout-note callout-titled">
@@ -469,7 +483,7 @@ Note
 <pre><code>Geometry set for 28000 features 
 Geometry type: POINT
 Dimension:     XY
-Bounding box:  xmin: 1.244185 ymin: 103.6146 xmax: 1.465609 ymax: 104.0296
+Bounding box:  xmin: 103.6146 ymin: 1.244185 xmax: 104.0296 ymax: 1.465609
 Projected CRS: SVY21 / Singapore TM
 First 5 geometries:</code></pre>
 </div>
@@ -480,12 +494,32 @@ First 5 geometries:</code></pre>
 <h2 class="anchored" data-anchor-id="data-wrangling"><strong>6. Data Wrangling</strong></h2>
 <section id="dropping-z-dimensions" class="level3">
 <h3 class="anchored" data-anchor-id="dropping-z-dimensions">6.1 Dropping Z dimensions</h3>
-<p>Based on the information in previous sections, we can see that among the three data frames, mpsb_sf possesses a Z dimension. To address this, we will utilize the st_zm() function, which is used to remove Zand/or M dimensions from feature geometries, resetting classes appropriately.</p>
+<p>Based on the information in previous sections, we can see that among the three data frames, mpsb_sf possesses a Z dimension and origin_sf possesses the M dimension. To address this, we will utilize the st_zm() function, which is used to remove Z and/or M dimensions from feature geometries, resetting classes appropriately.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true">Grab-Posisi</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false">MPSB Data</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 <div class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>mpsb_sf <span class="ot">&lt;-</span> <span class="fu">st_zm</span>(mpsb_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>origin_sf <span class="ot">&lt;-</span> <span class="fu">st_zm</span>(origin_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_geometry</span>(mpsb_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_geometry</span>(origin_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Geometry set for 28000 features 
+Geometry type: POINT
+Dimension:     XY
+Bounding box:  xmin: 103.6146 ymin: 1.244185 xmax: 104.0296 ymax: 1.465609
+Projected CRS: SVY21 / Singapore TM
+First 5 geometries:</code></pre>
+</div>
+</div>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>mpsb_sf <span class="ot">&lt;-</span> <span class="fu">st_zm</span>(mpsb_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_geometry</span>(mpsb_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Geometry set for 332 features 
 Geometry type: MULTIPOLYGON
@@ -495,40 +529,43 @@ Geodetic CRS:  WGS 84
 First 5 geometries:</code></pre>
 </div>
 </div>
+</div>
+</div>
+</div>
 </section>
 <section id="handle-invalid-geometries" class="level3">
 <h3 class="anchored" data-anchor-id="handle-invalid-geometries">6.2 Handle invalid geometries</h3>
 <p>Next, we check for invalid geometries and handle them accordingly.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true">Grab-Posisi</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false">Road Data</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false">MPSB Data</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true">Grab-Posisi</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false">Road Data</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-3" role="tab" aria-controls="tabset-2-3" aria-selected="false">MPSB Data</a></li></ul>
 <div class="tab-content">
-<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
 <div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">which</span>(<span class="fu">st_is_valid</span>(origin_sf) <span class="sc">==</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">which</span>(<span class="fu">st_is_valid</span>(origin_sf) <span class="sc">==</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 0</code></pre>
 </div>
 </div>
 </div>
-<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
 <div class="cell">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">which</span>(<span class="fu">st_is_valid</span>(road_sf) <span class="sc">==</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">which</span>(<span class="fu">st_is_valid</span>(road_sf) <span class="sc">==</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 0</code></pre>
 </div>
 </div>
 </div>
-<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
+<div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">which</span>(<span class="fu">st_is_valid</span>(mpsb_sf) <span class="sc">==</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">which</span>(<span class="fu">st_is_valid</span>(mpsb_sf) <span class="sc">==</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 6</code></pre>
 </div>
 </div>
 <p>As shown above, the MPSB data has 6 invalid geometries. To address this we use the <strong><em>st_make_valid</em></strong> function. This will result in the invalid geometries being removed.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>mpsb_sf <span class="ot">&lt;-</span> <span class="fu">st_make_valid</span>(mpsb_sf)</span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">which</span>(<span class="fu">st_is_valid</span>(mpsb_sf) <span class="sc">==</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>mpsb_sf <span class="ot">&lt;-</span> <span class="fu">st_make_valid</span>(mpsb_sf)</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">which</span>(<span class="fu">st_is_valid</span>(mpsb_sf) <span class="sc">==</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 0</code></pre>
 </div>
@@ -541,11 +578,11 @@ First 5 geometries:</code></pre>
 <h3 class="anchored" data-anchor-id="projection-system-transformation">6.3 Projection system transformation</h3>
 <p>All spatial data must be projected into EPSG:3414, which is a projected coordinate system specific to Singapore. Now, we verify whether the current projected CRS of the data is correct and if necessary, transform them.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true">Grab-Posisi</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false">Road Data</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-3" role="tab" aria-controls="tabset-2-3" aria-selected="false">MPSB Data</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true">Grab-Posisi</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false">Road Data</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-3" role="tab" aria-controls="tabset-3-3" aria-selected="false">MPSB Data</a></li></ul>
 <div class="tab-content">
-<div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+<div id="tabset-3-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-3-1-tab">
 <div class="cell">
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(origin_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(origin_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Coordinate Reference System:
   User input: EPSG:3414 
@@ -591,9 +628,9 @@ PROJCRS["SVY21 / Singapore TM",
 </div>
 </div>
 </div>
-<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+<div id="tabset-3-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-2-tab">
 <div class="cell">
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(road_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(road_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Coordinate Reference System:
   User input: WGS 84 
@@ -616,8 +653,8 @@ GEOGCRS["WGS 84",
 </div>
 <p>The data is not in EPSG:3414, therefore, we do a transformation to assign it the right code.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>road_sf <span class="ot">&lt;-</span> <span class="fu">st_set_crs</span>(road_sf, <span class="dv">3414</span>)</span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(road_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>road_sf <span class="ot">&lt;-</span> <span class="fu">st_set_crs</span>(road_sf, <span class="dv">3414</span>)</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(road_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Coordinate Reference System:
   User input: EPSG:3414 
@@ -663,9 +700,9 @@ PROJCRS["SVY21 / Singapore TM",
 </div>
 </div>
 </div>
-<div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
+<div id="tabset-3-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-3-tab">
 <div class="cell">
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(mpsb_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(mpsb_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Coordinate Reference System:
   User input: WGS 84 
@@ -688,8 +725,8 @@ GEOGCRS["WGS 84",
 </div>
 <p>The data is not in EPSG:3414, therefore, we do a transformation to assign it the right code.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>mpsb_sf <span class="ot">&lt;-</span> <span class="fu">st_set_crs</span>(mpsb_sf, <span class="dv">3414</span>)</span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(mpsb_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>mpsb_sf <span class="ot">&lt;-</span> <span class="fu">st_set_crs</span>(mpsb_sf, <span class="dv">3414</span>)</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(mpsb_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Coordinate Reference System:
   User input: EPSG:3414 
@@ -740,15 +777,413 @@ PROJCRS["SVY21 / Singapore TM",
 </section>
 <section id="preparing-singapore-boundary-layer" class="level3">
 <h3 class="anchored" data-anchor-id="preparing-singapore-boundary-layer">6.4 Preparing Singapore boundary layer</h3>
-<p>explain here</p>
+<p>The MPSB data includes subzone boundaries, however our needs are confined to Singapore’s general boundary. To do this, we will use the st_union function, which consolidates or combines geometric features into a single geometry, resulting in the combined border of all subzones in the dataset.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>sg_sf <span class="ot">&lt;-</span> mpsb_sf <span class="sc">%&gt;%</span></span>
-<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_union</span>() </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>sg_sf <span class="ot">&lt;-</span> mpsb_sf <span class="sc">%&gt;%</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_union</span>() </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sg_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sg_sf, <span class="at">main =</span> <span class="st">"Singapore Boundary Layer"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid" width="672"></p>
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="preparing-singapore-road-layer" class="level3">
+<h3 class="anchored" data-anchor-id="preparing-singapore-road-layer">6.5 Preparing Singapore road layer</h3>
+<p>For this study, we are also required to extract the road layer specific to Singapore. This can be done with the st_intersection function. This function identifies and retains the spatial intersections between geometries, allowing us to isolate the road segments that fall within the boundaries of Singapore.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>roadSG_sf <span class="ot">&lt;-</span> <span class="fu">st_intersection</span>(road_sf, sg_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="mapping-geospatial-data-sets-with-tmap" class="level3">
+<h3 class="anchored" data-anchor-id="mapping-geospatial-data-sets-with-tmap">6.6 Mapping geospatial data sets with tmap</h3>
+<p>Let us visualize our data!</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-4-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-1" role="tab" aria-controls="tabset-4-1" aria-selected="true">Origins</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-4-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-4-2" role="tab" aria-controls="tabset-4-2" aria-selected="false">Road Network</a></li></ul>
+<div class="tab-content">
+<div id="tabset-4-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-4-1-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">'plot'</span>)</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(mpsb_sf) <span class="sc">+</span> </span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"#F0E1D7"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(origin_sf) <span class="sc">+</span></span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">size =</span> <span class="fl">0.01</span>, <span class="at">col =</span> <span class="st">"#2B2B2B"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</div>
+<div id="tabset-4-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-2-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">'plot'</span>)</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(origin_sf) <span class="sc">+</span> </span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">size =</span> <span class="fl">0.05</span>, <span class="at">col =</span> <span class="st">"#2B2B2B"</span>) <span class="sc">+</span> </span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(roadSG_sf) <span class="sc">+</span></span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="at">lwd =</span> <span class="fl">0.5</span>, <span class="at">col =</span> <span class="st">"#BF8D7A"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-32-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="preparation-before-deriving-kernel-density-estimation" class="level2">
+<h2 class="anchored" data-anchor-id="preparation-before-deriving-kernel-density-estimation"><strong>7. Preparation before Deriving Kernel Density Estimation</strong></h2>
+<section id="creating-ppp-objects" class="level3">
+<h3 class="anchored" data-anchor-id="creating-ppp-objects">7.1 Creating ppp objects</h3>
+<p>To use the functionalities provided by the spatstat package, our spatial data needs to be in the form of a point pattern object (ppp). In this section, we will transform our spatial data, which is currently stored as sf tibble data frames, into ppp objects using the as.ppp() function.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>origin_ppp <span class="ot">&lt;-</span> <span class="fu">as.ppp</span>(origin_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(origin_ppp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Marked planar point pattern:  28000 points
+Average intensity 304722.2 points per square unit
+
+Coordinates are given to 6 decimal places
+
+marks are of type 'character'
+Summary:
+   Length     Class      Mode 
+    28000 character character 
+
+Window: rectangle = [103.61463, 104.02961] x [1.2441846, 1.4656086] units
+                    (0.415 x 0.2214 units)
+Window area = 0.091887 square units</code></pre>
+</div>
+</div>
+<p>Now, we plot origin_ppp.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(origin_ppp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-35-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="handling-duplicated-points" class="level3">
+<h3 class="anchored" data-anchor-id="handling-duplicated-points">7.2 Handling duplicated points</h3>
+<p>We check for any duplication in a ppp object using the code below.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">any</span>(<span class="fu">duplicated</span>(origin_ppp))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+</div>
+<p>The result is false, which indicates that there are no duplicated points in origin_ppp. Therefore, jittering, which is used to address overlapping points, will not be necessary in this context.</p>
+</section>
+<section id="creating-an-owin-object" class="level3">
+<h3 class="anchored" data-anchor-id="creating-an-owin-object">7.3 Creating an owin object</h3>
+<p>When analysing spatial point patterns, it is best to confine the analysis within a specific geographical area such as the Singapore boundary. In spatstat, an owin object is uniquely designed to represent this polygonal region.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>sg_owin <span class="ot">&lt;-</span> <span class="fu">as.owin</span>(sg_sf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now, we plot and display the summary statistics of the output generated.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sg_owin)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-38-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(sg_owin)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Window: polygonal boundary
+82 separate polygons (36 holes)
+                  vertices         area relative.area
+polygon 1            15251  5.69516e-02      8.93e-01
+polygon 2              285  1.30942e-04      2.05e-03
+polygon 3              719  4.39121e-03      6.89e-02
+polygon 4               44  1.84131e-07      2.89e-06
+polygon 5               27  1.22150e-06      1.92e-05
+polygon 6              706  1.04681e-03      1.64e-02
+polygon 7 (hole)        41 -3.26409e-06     -5.12e-05
+polygon 8 (hole)       316 -4.15500e-06     -6.52e-05
+polygon 9               77  2.68124e-05      4.20e-04
+polygon 10 (hole)        3 -8.52651e-21     -1.34e-19
+polygon 11 (hole)        3 -1.45500e-12     -2.28e-11
+polygon 12              30  2.27540e-06      3.57e-05
+polygon 13 (hole)        4 -2.03800e-11     -3.20e-10
+polygon 14 (hole)        3 -6.93000e-12     -1.09e-10
+polygon 15 (hole)        3 -2.55000e-12     -4.00e-11
+polygon 16 (hole)        3 -2.87500e-12     -4.51e-11
+polygon 17 (hole)        3 -1.04850e-11     -1.64e-10
+polygon 18 (hole)        3 -4.55924e-12     -7.15e-11
+polygon 19 (hole)        4 -3.53400e-11     -5.54e-10
+polygon 20 (hole)        5 -1.16350e-11     -1.82e-10
+polygon 21              71  6.65312e-07      1.04e-05
+polygon 22 (hole)        4 -5.20482e-11     -8.16e-10
+polygon 23 (hole)        3 -7.60480e-12     -1.19e-10
+polygon 24 (hole)       38 -6.33758e-07     -9.94e-06
+polygon 25 (hole)        3 -3.10000e-13     -4.86e-12
+polygon 26 (hole)        3 -3.96000e-12     -6.21e-11
+polygon 27              91  1.21616e-06      1.91e-05
+polygon 28 (hole)        3 -3.46000e-12     -5.43e-11
+polygon 29 (hole)        4 -2.82233e-12     -4.43e-11
+polygon 30               3  1.59650e-11      2.50e-10
+polygon 31 (hole)        3 -1.46879e-12     -2.30e-11
+polygon 32 (hole)      269 -9.86218e-08     -1.55e-06
+polygon 33 (hole)       19 -3.55700e-10     -5.58e-09
+polygon 34 (hole)       34 -1.12488e-08     -1.76e-07
+polygon 35 (hole)       23 -1.62267e-09     -2.54e-08
+polygon 36              40  1.12629e-06      1.77e-05
+polygon 37 (hole)       39 -4.87830e-07     -7.65e-06
+polygon 38 (hole)       11 -6.79831e-09     -1.07e-07
+polygon 39 (hole)        3 -3.00000e-13     -4.70e-12
+polygon 40              45  2.04147e-07      3.20e-06
+polygon 41             137  2.61888e-07      4.11e-06
+polygon 42             147  2.52227e-07      3.96e-06
+polygon 43 (hole)        4 -2.00000e-14     -3.14e-13
+polygon 44              75  1.41006e-06      2.21e-05
+polygon 45              83  4.29803e-07      6.74e-06
+polygon 46             211  3.82343e-05      6.00e-04
+polygon 47             106  2.47135e-07      3.88e-06
+polygon 48             264  1.22401e-04      1.92e-03
+polygon 49              71  4.57530e-07      7.17e-06
+polygon 50              10  1.62322e-08      2.55e-07
+polygon 51 (hole)        3 -2.22000e-12     -3.48e-11
+polygon 52             482  1.67489e-04      2.63e-03
+polygon 53             155  2.17371e-05      3.41e-04
+polygon 54            1020  1.03834e-04      1.63e-03
+polygon 55 (hole)        5 -4.21200e-11     -6.60e-10
+polygon 56 (hole)        4 -5.84300e-11     -9.16e-10
+polygon 57 (hole)        3 -2.06000e-12     -3.23e-11
+polygon 58 (hole)        4 -6.14500e-12     -9.64e-11
+polygon 59 (hole)        4 -1.00000e-14     -1.57e-13
+polygon 60              65  6.84899e-06      1.07e-04
+polygon 61 (hole)        3 -8.64000e-12     -1.35e-10
+polygon 62              47  3.10481e-06      4.87e-05
+polygon 63               6  3.65971e-08      5.74e-07
+polygon 64             129  7.75016e-06      1.22e-04
+polygon 65               4  2.18917e-08      3.43e-07
+polygon 66            1045  3.61201e-04      5.66e-03
+polygon 67              22  5.48185e-07      8.60e-06
+polygon 68              59  2.78850e-06      4.37e-05
+polygon 69              14  4.76604e-07      7.47e-06
+polygon 70              94  4.84443e-06      7.60e-05
+polygon 71             234  1.69631e-04      2.66e-03
+polygon 72              10  3.98977e-08      6.26e-07
+polygon 73             232  3.84260e-05      6.03e-04
+polygon 74 (hole)       13 -3.18647e-08     -5.00e-07
+polygon 75              15  3.27704e-06      5.14e-05
+polygon 76             227  8.96336e-05      1.41e-03
+polygon 77              10  5.36464e-07      8.41e-06
+polygon 78              19  2.51264e-06      3.94e-05
+polygon 79             145  7.81518e-05      1.23e-03
+polygon 80              30  3.48554e-07      5.47e-06
+polygon 81              37  1.05220e-06      1.65e-05
+polygon 82               4  7.69607e-09      1.21e-07
+enclosing rectangle: [103.6057, 104.08848] x [1.1586987, 1.4707748] units
+                     (0.4828 x 0.3121 units)
+Window area = 0.0637736 square units
+Fraction of frame area: 0.423</code></pre>
+</div>
+</div>
+</section>
+<section id="combining-point-events-object-and-owin-object" class="level3">
+<h3 class="anchored" data-anchor-id="combining-point-events-object-and-owin-object">7.4 Combining point events object and owin object</h3>
+<p>This is the last step before deriving kernel density estimation. In this section, we extract Grab origin points that are located within Singapore by using the code below.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>originSG_ppp <span class="ot">=</span> origin_ppp[sg_owin]</span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(originSG_ppp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Marked planar point pattern:  28000 points
+Average intensity 439053.1 points per square unit
+
+Coordinates are given to 6 decimal places
+
+marks are of type 'character'
+Summary:
+   Length     Class      Mode 
+    28000 character character 
+
+Window: polygonal boundary
+82 separate polygons (36 holes)
+                  vertices         area relative.area
+polygon 1            15251  5.69516e-02      8.93e-01
+polygon 2              285  1.30942e-04      2.05e-03
+polygon 3              719  4.39121e-03      6.89e-02
+polygon 4               44  1.84131e-07      2.89e-06
+polygon 5               27  1.22150e-06      1.92e-05
+polygon 6              706  1.04681e-03      1.64e-02
+polygon 7 (hole)        41 -3.26409e-06     -5.12e-05
+polygon 8 (hole)       316 -4.15500e-06     -6.52e-05
+polygon 9               77  2.68124e-05      4.20e-04
+polygon 10 (hole)        3 -8.52651e-21     -1.34e-19
+polygon 11 (hole)        3 -1.45500e-12     -2.28e-11
+polygon 12              30  2.27540e-06      3.57e-05
+polygon 13 (hole)        4 -2.03800e-11     -3.20e-10
+polygon 14 (hole)        3 -6.93000e-12     -1.09e-10
+polygon 15 (hole)        3 -2.55000e-12     -4.00e-11
+polygon 16 (hole)        3 -2.87500e-12     -4.51e-11
+polygon 17 (hole)        3 -1.04850e-11     -1.64e-10
+polygon 18 (hole)        3 -4.55924e-12     -7.15e-11
+polygon 19 (hole)        4 -3.53400e-11     -5.54e-10
+polygon 20 (hole)        5 -1.16350e-11     -1.82e-10
+polygon 21              71  6.65312e-07      1.04e-05
+polygon 22 (hole)        4 -5.20482e-11     -8.16e-10
+polygon 23 (hole)        3 -7.60480e-12     -1.19e-10
+polygon 24 (hole)       38 -6.33758e-07     -9.94e-06
+polygon 25 (hole)        3 -3.10000e-13     -4.86e-12
+polygon 26 (hole)        3 -3.96000e-12     -6.21e-11
+polygon 27              91  1.21616e-06      1.91e-05
+polygon 28 (hole)        3 -3.46000e-12     -5.43e-11
+polygon 29 (hole)        4 -2.82233e-12     -4.43e-11
+polygon 30               3  1.59650e-11      2.50e-10
+polygon 31 (hole)        3 -1.46879e-12     -2.30e-11
+polygon 32 (hole)      269 -9.86218e-08     -1.55e-06
+polygon 33 (hole)       19 -3.55700e-10     -5.58e-09
+polygon 34 (hole)       34 -1.12488e-08     -1.76e-07
+polygon 35 (hole)       23 -1.62267e-09     -2.54e-08
+polygon 36              40  1.12629e-06      1.77e-05
+polygon 37 (hole)       39 -4.87830e-07     -7.65e-06
+polygon 38 (hole)       11 -6.79831e-09     -1.07e-07
+polygon 39 (hole)        3 -3.00000e-13     -4.70e-12
+polygon 40              45  2.04147e-07      3.20e-06
+polygon 41             137  2.61888e-07      4.11e-06
+polygon 42             147  2.52227e-07      3.96e-06
+polygon 43 (hole)        4 -2.00000e-14     -3.14e-13
+polygon 44              75  1.41006e-06      2.21e-05
+polygon 45              83  4.29803e-07      6.74e-06
+polygon 46             211  3.82343e-05      6.00e-04
+polygon 47             106  2.47135e-07      3.88e-06
+polygon 48             264  1.22401e-04      1.92e-03
+polygon 49              71  4.57530e-07      7.17e-06
+polygon 50              10  1.62322e-08      2.55e-07
+polygon 51 (hole)        3 -2.22000e-12     -3.48e-11
+polygon 52             482  1.67489e-04      2.63e-03
+polygon 53             155  2.17371e-05      3.41e-04
+polygon 54            1020  1.03834e-04      1.63e-03
+polygon 55 (hole)        5 -4.21200e-11     -6.60e-10
+polygon 56 (hole)        4 -5.84300e-11     -9.16e-10
+polygon 57 (hole)        3 -2.06000e-12     -3.23e-11
+polygon 58 (hole)        4 -6.14500e-12     -9.64e-11
+polygon 59 (hole)        4 -1.00000e-14     -1.57e-13
+polygon 60              65  6.84899e-06      1.07e-04
+polygon 61 (hole)        3 -8.64000e-12     -1.35e-10
+polygon 62              47  3.10481e-06      4.87e-05
+polygon 63               6  3.65971e-08      5.74e-07
+polygon 64             129  7.75016e-06      1.22e-04
+polygon 65               4  2.18917e-08      3.43e-07
+polygon 66            1045  3.61201e-04      5.66e-03
+polygon 67              22  5.48185e-07      8.60e-06
+polygon 68              59  2.78850e-06      4.37e-05
+polygon 69              14  4.76604e-07      7.47e-06
+polygon 70              94  4.84443e-06      7.60e-05
+polygon 71             234  1.69631e-04      2.66e-03
+polygon 72              10  3.98977e-08      6.26e-07
+polygon 73             232  3.84260e-05      6.03e-04
+polygon 74 (hole)       13 -3.18647e-08     -5.00e-07
+polygon 75              15  3.27704e-06      5.14e-05
+polygon 76             227  8.96336e-05      1.41e-03
+polygon 77              10  5.36464e-07      8.41e-06
+polygon 78              19  2.51264e-06      3.94e-05
+polygon 79             145  7.81518e-05      1.23e-03
+polygon 80              30  3.48554e-07      5.47e-06
+polygon 81              37  1.05220e-06      1.65e-05
+polygon 82               4  7.69607e-09      1.21e-07
+enclosing rectangle: [103.6057, 104.08848] x [1.1586987, 1.4707748] units
+                     (0.4828 x 0.3121 units)
+Window area = 0.0637736 square units
+Fraction of frame area: 0.423</code></pre>
+</div>
+</div>
+<p>Here is the visualization of the resulting output.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(originSG_ppp)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-41-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+</section>
+<section id="deriving-kernel-density-estimation" class="level2">
+<h2 class="anchored" data-anchor-id="deriving-kernel-density-estimation"><strong>9. Deriving Kernel Density Estimation</strong></h2>
+<section id="rescaling-data-from-meter-to-kilometer" class="level3">
+<h3 class="anchored" data-anchor-id="rescaling-data-from-meter-to-kilometer">9.1 Rescaling data from meter to kilometer</h3>
+<p>The spatial data is in the SVY21 projection, and the unit of measurement for SVY21 is meters. Therefore, it is important to convert the unit of measurement to kilometers.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>originSG_ppp.km <span class="ot">&lt;-</span> <span class="fu">rescale</span>(originSG_ppp, <span class="dv">1000</span>, <span class="st">"km"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="choosing-bandwidth" class="level3">
+<h3 class="anchored" data-anchor-id="choosing-bandwidth">9.2 Choosing bandwidth</h3>
+<p>Online sources recommend using the bw.ppl() algorithm for spatial patterns characterized by tight clusters, as it tends to produce more suitable values. However, they emphasize that if the goal is to identify a single tight cluster amid random noise, then the bw.diggle() method would likely be more effective. There are also methods such as bw.scott() and bw.CvL(). Let us compare these bandwidths with our previous tmap visualization.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-5-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-1" role="tab" aria-controls="tabset-5-1" aria-selected="true">bw.diggle</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-2" role="tab" aria-controls="tabset-5-2" aria-selected="false">bw.ppl</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-3" role="tab" aria-controls="tabset-5-3" aria-selected="false">bw.scott</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-4" role="tab" aria-controls="tabset-5-4" aria-selected="false">bw.CvL</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-5-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-5" role="tab" aria-controls="tabset-5-5" aria-selected="false">Origins</a></li></ul>
+<div class="tab-content">
+<div id="tabset-5-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-5-1-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">density</span>(originSG_ppp.km,</span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">sigma=</span>bw.diggle,</span>
+<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>             <span class="at">edge=</span><span class="cn">TRUE</span>,</span>
+<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>             <span class="at">kernel=</span><span class="st">"gaussian"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-43-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</div>
+<div id="tabset-5-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-2-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">density</span>(originSG_ppp.km,</span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">sigma=</span>bw.ppl,</span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a>             <span class="at">edge=</span><span class="cn">TRUE</span>,</span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>             <span class="at">kernel=</span><span class="st">"gaussian"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-44-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</div>
+<div id="tabset-5-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-3-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">density</span>(originSG_ppp.km,</span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">sigma=</span>bw.scott,</span>
+<span id="cb68-3"><a href="#cb68-3" aria-hidden="true" tabindex="-1"></a>             <span class="at">edge=</span><span class="cn">TRUE</span>,</span>
+<span id="cb68-4"><a href="#cb68-4" aria-hidden="true" tabindex="-1"></a>             <span class="at">kernel=</span><span class="st">"gaussian"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-45-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</div>
+<div id="tabset-5-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-4-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">density</span>(originSG_ppp.km,</span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">sigma=</span>bw.CvL,</span>
+<span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a>             <span class="at">edge=</span><span class="cn">TRUE</span>,</span>
+<span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a>             <span class="at">kernel=</span><span class="st">"gaussian"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-46-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</div>
+<div id="tabset-5-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-5-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">'plot'</span>)</span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(mpsb_sf) <span class="sc">+</span> </span>
+<span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"#F0E1D7"</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span> </span>
+<span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(origin_sf) <span class="sc">+</span></span>
+<span id="cb70-5"><a href="#cb70-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">size =</span> <span class="fl">0.01</span>, <span class="at">col =</span> <span class="st">"#2B2B2B"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-47-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>The visual analysis of the maps reveals that both bw.scott() and bw.CvL() result in more oversmoothed representations. This is evident in the overly spread gradient with bw.scott() and the merging of high-density regions into a uniform surface with bw.CvL(), making spatial patterns less apparent.</p>
+<p>On the other hand, the maps generated with bw.diggle() and bw.ppl() show distinct differences. The bw.ppl() map appears to be more accurate, showcasing well-defined clusters that highlight concentrated areas, much like the spatial distribution observed in the tmap of Grab origin points.</p>
+<p>For the final kernel density estimation map, the bandwidth method bw.ppl() will be used with the default Gaussian kernel method.</p>
+<p>Final:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">density</span>(originSG_ppp.km,</span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">sigma=</span>bw.ppl,</span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a>             <span class="at">edge=</span><span class="cn">TRUE</span>,</span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a>             <span class="at">kernel=</span><span class="st">"gaussian"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="Take-home_Ex01_files/figure-html/unnamed-chunk-48-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 

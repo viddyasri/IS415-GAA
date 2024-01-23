@@ -91,7 +91,7 @@ glimpse(road_sf)
 When using the st_read function to read a file that is not shapefile, it is necessary to explicitly specify the file format. 
 
 ```{r}
-mpsb_sf <- st_read("../../data/MasterPlan2019SubzoneBoundaryNoSeaKML.kml")
+mpsb_sf <- st_read("../../data/MasterPlan2019SubzoneBoundaryNoSeaGEOJSON.geojson")
 ```
 
 ```{r}
@@ -147,7 +147,7 @@ origin_df <- df %>%
 In this section, we transform origin_df into an sf tibble data frame using the st_as_sf function.
 
 ```{r}
-origin_sf <- st_as_sf(origin_df, coords = c("rawlat", "rawlng"), crs = 3414)
+origin_sf <- st_as_sf(origin_df, coords = c("rawlng", "rawlat"), crs = 3414)
 ```
 
 ```{r}
@@ -166,7 +166,21 @@ st_geometry(origin_sf)
 
 ### 6.1 Dropping Z dimensions
 
-Based on the information in previous sections,  we can see that among the three data frames, mpsb_sf possesses a Z dimension. To address this, we will utilize the st_zm() function, which is used to remove Zand/or M dimensions from feature geometries, resetting classes appropriately.
+Based on the information in previous sections,  we can see that among the three data frames, mpsb_sf possesses a Z dimension and origin_sf possesses the M dimension. To address this, we will utilize the st_zm() function, which is used to remove Z and/or M dimensions from feature geometries, resetting classes appropriately.
+
+::: {.panel-tabset}
+
+## Grab-Posisi
+
+```{r}
+origin_sf <- st_zm(origin_sf)
+```
+
+```{r}
+st_geometry(origin_sf)
+```
+
+## MPSB Data
 
 ```{r}
 mpsb_sf <- st_zm(mpsb_sf)
@@ -175,6 +189,8 @@ mpsb_sf <- st_zm(mpsb_sf)
 ```{r}
 st_geometry(mpsb_sf)
 ```
+
+:::
 
 ### 6.2 Handle invalid geometries
 
@@ -251,7 +267,7 @@ st_crs(mpsb_sf)
 
 ### 6.4 Preparing Singapore boundary layer
 
-explain here
+The MPSB data includes subzone boundaries, however our needs are confined to Singapore's general boundary. To do this, we will use the st_union function, which consolidates or combines geometric features into a single geometry, resulting in the combined border of all subzones in the dataset.
 
 ```{r}
 sg_sf <- mpsb_sf %>%
@@ -259,5 +275,193 @@ sg_sf <- mpsb_sf %>%
 ```
 
 ```{r}
-plot(sg_sf)
+plot(sg_sf, main = "Singapore Boundary Layer")
 ```
+
+### 6.5 Preparing Singapore road layer
+
+For this study, we are also required to extract the road layer specific to Singapore. This can be done with the st_intersection function. This function identifies and retains the spatial intersections between geometries, allowing us to isolate the road segments that fall within the boundaries of Singapore.
+
+```{r}
+roadSG_sf <- st_intersection(road_sf, sg_sf)
+```
+
+### 6.6 Mapping geospatial data sets with tmap
+
+Let us visualize our data!
+
+::: panel-tabset
+
+## Origins
+
+```{r}
+tmap_mode('plot')
+tm_shape(mpsb_sf) + 
+  tm_polygons(col = "#F0E1D7", alpha = 0.5) + 
+  tm_shape(origin_sf) +
+  tm_dots(size = 0.01, col = "#2B2B2B")
+```
+
+## Road Network
+
+```{r}
+tmap_mode('plot')
+tm_shape(origin_sf) + 
+  tm_dots(size = 0.05, col = "#2B2B2B") + 
+  tm_shape(roadSG_sf) +
+  tm_lines(lwd = 0.5, col = "#BF8D7A")
+```
+
+:::
+
+## **7. Preparation before Deriving Kernel Density Estimation**
+
+### 7.1 Creating ppp objects
+
+To use the functionalities provided by the spatstat package, our spatial data needs to be in the form of a point pattern object (ppp). In this section, we will transform our spatial data, which is currently stored as sf tibble data frames, into ppp objects using the as.ppp() function. 
+
+```{r}
+origin_ppp <- as.ppp(origin_sf)
+```
+
+```{r}
+summary(origin_ppp)
+```
+
+Now, we plot origin_ppp.
+
+```{r}
+plot(origin_ppp)
+```
+
+### 7.2 Handling duplicated points
+
+We check for any duplication in a ppp object using the code below.
+
+```{r}
+any(duplicated(origin_ppp))
+```
+
+The result is false, which indicates that there are no duplicated points in origin_ppp. Therefore, jittering, which is used to address overlapping points, will not be necessary in this context.
+
+### 7.3 Creating an owin object
+
+When analysing spatial point patterns, it is best to confine the analysis within a specific geographical area such as the Singapore boundary. In spatstat, an owin object is uniquely designed to represent this polygonal region.
+
+```{r}
+sg_owin <- as.owin(sg_sf)
+```
+
+Now, we plot and display the summary statistics of the output generated.
+
+```{r}
+plot(sg_owin)
+```
+
+```{r}
+summary(sg_owin)
+```
+
+### 7.4 Combining point events object and owin object
+
+This is the last step before deriving kernel density estimation. In this section, we extract Grab origin points that are located within Singapore by using the code below.
+
+```{r}
+originSG_ppp = origin_ppp[sg_owin]
+summary(originSG_ppp)
+```
+
+Here is the visualization of the resulting output.
+
+```{r}
+plot(originSG_ppp)
+```
+
+## **9. Deriving Kernel Density Estimation**
+
+### 9.1 Rescaling data from meter to kilometer
+
+The spatial data is in the SVY21 projection, and the unit of measurement for SVY21 is meters. Therefore, it is important to convert the unit of measurement to kilometers.
+
+```{r}
+originSG_ppp.km <- rescale(originSG_ppp, 1000, "km")
+```
+
+### 9.2 Choosing bandwidth & plotting map
+
+Online sources recommend using the bw.ppl() algorithm for spatial patterns characterized by tight clusters, as it tends to produce more suitable values. However, they emphasize that if the goal is to identify a single tight cluster amid random noise, then the bw.diggle() method would likely be more effective. There are also methods such as bw.scott() and bw.CvL(). Let us compare these bandwidths with our previous tmap visualization.
+
+::: panel-tabset
+
+## bw.diggle
+
+```{r}
+plot(density(originSG_ppp.km,
+             sigma=bw.diggle,
+             edge=TRUE,
+             kernel="gaussian"))
+```
+
+## bw.ppl
+
+```{r}
+plot(density(originSG_ppp.km,
+             sigma=bw.ppl,
+             edge=TRUE,
+             kernel="gaussian"))
+```
+
+## bw.scott
+
+```{r}
+plot(density(originSG_ppp.km,
+             sigma=bw.scott,
+             edge=TRUE,
+             kernel="gaussian"))
+```
+
+## bw.CvL
+
+```{r}
+plot(density(originSG_ppp.km,
+             sigma=bw.CvL,
+             edge=TRUE,
+             kernel="gaussian"))
+```
+
+## Origins
+
+```{r}
+tmap_mode('plot')
+tm_shape(mpsb_sf) + 
+  tm_polygons(col = "#F0E1D7", alpha = 0.5) + 
+  tm_shape(origin_sf) +
+  tm_dots(size = 0.01, col = "#2B2B2B")
+```
+
+:::
+
+The visual analysis of the maps reveals that both bw.scott() and bw.CvL() result in more oversmoothed representations. This is evident in the overly spread gradient with bw.scott() and the merging of high-density regions into a uniform surface with bw.CvL(), making spatial patterns less apparent.
+
+On the other hand, the maps generated with bw.diggle() and bw.ppl() show distinct differences. The bw.ppl() map appears to be more accurate, showcasing well-defined clusters that highlight concentrated areas, much like the spatial distribution observed in the tmap of Grab origin points.
+
+For the final kernel density estimation map, the bandwidth method bw.ppl() will be used with the default Gaussian kernel method.
+
+Final:
+
+```{r}
+plot(density(originSG_ppp.km,
+             sigma=bw.ppl,
+             edge=TRUE,
+             kernel="gaussian"))
+```
+
+### 9.3 Kernel density estimation maps on OpenStreetMap
+
+
+### 9.4 Analysis of kernel density estimation maps
+
+
+## **10. Deriving Network Constrained Kernel Density Estimation**
+
+
