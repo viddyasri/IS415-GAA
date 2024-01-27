@@ -519,6 +519,97 @@ points_in_east = st_intersection(origin_sf, east_region)
 ```
 :::
 
+### Visualising the geospatial data
+
+::: panel-tabset
+## Central Region
+
+```{r}
+tmap_mode('plot')
+tm_shape(points_in_central) + 
+  tm_dots(size = 0.02, col = "#2B2B2B") + 
+  tm_shape(roads_in_central) +
+  tm_lines(lwd = 0.05, col = "#F0E1D7")
+```
+
+## East Region
+
+```{r}
+tmap_mode('plot')
+tm_shape(points_in_east) + 
+  tm_dots(size = 0.02, col = "#2B2B2B") + 
+  tm_shape(roads_in_east) +
+  tm_lines(lwd = 0.05, col = "#F0E1D7")
+```
+:::
+
+### Preparing the lixels objects
+
+Before computing NetKDE, the SpatialLines object need to be cut into lixels with a specified minimal distance.
+
+::: panel-tabset
+## Central Region
+
+```{r}
+roads_in_central <- roads_in_central %>%
+  st_sf() %>%
+  st_cast("LINESTRING")
+```
+
+```{r}
+lixels_central <- lixelize_lines(roads_in_central, 
+                         750, 
+                         mindist = 375)
+```
+
+## East Region
+
+```{r}
+roads_in_east <- roads_in_east %>%
+  st_sf() %>%
+  st_cast("LINESTRING")
+```
+
+```{r}
+lixels_east <- lixelize_lines(roads_in_east, 
+                         750, 
+                         mindist = 375)
+```
+:::
+
+### Generating line centre points
+
+Next, we generate a SpatialPointsDataFrame (i.e. samples) with line centre points. Line center points help provide a more accurate representation of the spatial distribution of events along the network. 
+
+::: panel-tabset
+## Central Region
+
+```{r}
+samples_central <- lines_center(lixels_central)
+```
+
+## East Region
+
+```{r}
+samples_east <- lines_center(lixels_east)
+```
+:::
+
+### Performing NetKDE
+
+::: panel-tabset
+## Central Region
+
+```{r}
+
+```
+
+## East Region
+
+```{r}
+
+```
+:::
 
 
 ## **12. References**

@@ -1,0 +1,763 @@
+---
+title: "Take-home Exercise 1: Application of Spatial Point Patterns Analysis to discover the geographical distribution of Grab hailing services in Singapore"
+execute: 
+  warning: false
+date: "`r Sys.Date()`"
+highlight-style: dracula
+---
+
+
+## **1. Overview**
+
+Human mobility, defined as the movement of persons through space and time, provides important insights into the spatial and temporal elements of human activity.
+
+This study intends to use appropriate spatial point pattern analysis methods to reveal the geographical and spatiotemporal distribution of Grab hailing service locations in Singapore. This would further improve our understanding of how Grab services are spatially dispersed and evolve over time, providing useful insights for informed decision-making in the field of smart city planning.
+
+## **2. The Data**
+
+This study will utilize three datasets, namely:
+
+-   Grab-Posisi data for Singapore
+
+-   Road dataset sourced from OpenStreetMap
+
+-   Master Plan 2019 Subzone Boundary (Excluding Sea) from Data.gov.sg.
+
+## **3. Installation and Loading of Packages**
+
+The R packages that will be used in this study are:
+
+-   **sf:** for importing, managing, and processing geospatial data
+
+-   **tidyverse:** for performing data science tasks
+
+-   **tmap:** for plotting cartographic quality static point patterns maps or interactive maps by using leaflet API
+
+-   **raster:** reads, writes, manipulates, analyses and model of gridded spatial data
+
+-   **spatstat:** has a wide range of useful functions for point pattern analysis
+
+-   **maptools:** for manipulating geographic data
+
+-   **spNetwork:** for performing spatial analysis on networks
+
+-   **classInt:** for choosing univariate class intervals for mapping or other graphics purposes.
+
+-   **viridis:** for generating the color maps in base R
+
+-   **arrow:** for a wide range of data analysis tasks
+
+-   **lubridate:** provides functions for working with dates and times
+
+-   **dplyr:** for wrangling data
+
+
+```{r}
+#| eval: false
+install.packages("maptools", repos = "https://packagemanager.posit.co/cran/2023-10-13")
+```
+
+```{r}
+pacman::p_load(sf, tidyverse, tmap, raster, spatstat, maptools, spNetwork, classInt, viridis, arrow, lubridate, dplyr)
+```
+
+
+## **4. Import Data**
+
+### 4.1 Grab-Posisi data
+
+The ***read_parquet()*** function is associated with the ***arrow*** package in R. This function is used to read data from a Parquet file. However, it is important to note that the current data is aspatial and is not in the sf tibble data frame format. The data will be converted at a later stage in this study.
+
+
+```{r}
+df <- read_parquet("../../data/GrabPosisi/part-00000.parquet")
+```
+
+```{r}
+glimpse(df)
+```
+
+
+### 4.2 Road dataset
+
+The ***st_read()*** function is associated with the ***sf*** package in R. This function is used to read spatial data from various formats. When using the st_read function to read a shapefile, there is no need to explicitly specify the file format.
+
+
+```{r}
+road_sf <- st_read(dsn = "../../data", 
+                layer = "gis_osm_roads_free_1")
+```
+
+```{r}
+glimpse(road_sf)
+```
+
+
+### 4.3 Master Plan 2019 Subzone Boundary (Excluding Sea)
+
+When using the st_read function to read a file that is not shapefile, it is necessary to explicitly specify the file format.
+
+
+```{r}
+mpsz_sf <- st_read(dsn = "../../data", 
+                layer = "MPSZ-2019")
+```
+
+```{r}
+glimpse(mpsz_sf)
+```
+
+
+## **5. Converting Aspatial Data to Geospatial Data**
+
+In this section, we will be preparing Grab taxi location points by origins and converting them into sf tibble data frames.
+
+### 5.1 Convert integer to datetime format
+
+In the previous section, when loading the data and inspecting its structure using the glimpse function, it's clear that the pingtimestamp column is saved as an integer. Working with time-related data in raw integer format can be difficult since it lacks context.
+
+To address this issue, the ***as_datetime()*** method from the ***lubridate*** package is used. This function is intended to convert different date and time representations, including integers, into datetime format.
+
+
+```{r}
+df$pingtimestamp <- as_datetime(df$pingtimestamp)
+```
+
+```{r}
+glimpse(df)
+```
+
+
+### 5.2 Extracting location points by origin
+
+Next, to prepare the Grab taxi location points by origin, we use the code below:
+
+
+```{r}
+origin_df <- df %>% 
+  group_by(trj_id) %>% 
+  arrange(pingtimestamp) %>% 
+  filter(row_number()==1) %>% 
+  mutate(weekday = wday(pingtimestamp, label=TRUE, abbr=TRUE),
+         start_hr = factor(hour(pingtimestamp)),
+         day = factor(mday(pingtimestamp)))
+```
+
+
+-   **group_by(trj_id):** the data frame is grouped based on the unique trip identifiers (trj_id).
+
+-   **arrange(pingtimestamp):** within each trip group, the rows are arranged in ascending order based on the timestamp. This sorts the data in chronological order for each trip.
+
+-   **filter(row_number()==1):** for each trip group, only the row with the first coordinate is retained. This captures the origin of each trip.
+
+-   **mutate function:** is used to create additional columns that provide contextual information about each trip's starting location.
+
+### 5.3 Converting to sf tibble data frame
+
+In this section, we transform origin_df into an sf tibble data frame using the st_as_sf function.
+
+
+```{r}
+origin_sf <- st_as_sf(origin_df, coords = c("rawlng", "rawlat"), crs = 3414)
+```
+
+```{r}
+glimpse(origin_sf)
+```
+
+
+::: callout-note
+Notice that a new geometry column has appeared.
+:::
+
+
+```{r}
+st_geometry(origin_sf)
+```
+
+
+## **6. Data Wrangling**
+
+### 6.1 Dropping Z dimensions
+
+Based on the information in previous sections, we can see that among the three data frames, origin_sf possesses the M dimension. To address this, we will utilize the st_zm() function, which is used to remove Z and/or M dimensions from feature geometries, resetting classes appropriately.
+
+
+```{r}
+origin_sf <- st_zm(origin_sf)
+```
+
+```{r}
+st_geometry(origin_sf)
+```
+
+
+### 6.2 Handle invalid geometries
+
+Next, we check for invalid geometries and handle them accordingly.
+
+::: panel-tabset
+## Grab-Posisi
+
+
+```{r}
+length(which(st_is_valid(origin_sf) == FALSE))
+```
+
+
+## Road Data
+
+
+```{r}
+length(which(st_is_valid(road_sf) == FALSE))
+```
+
+
+## MPSZ Data
+
+
+```{r}
+length(which(st_is_valid(mpsz_sf) == FALSE))
+```
+
+
+As shown above, the MPSZ data has 6 invalid geometries. To address this we use the ***st_make_valid*** function. This will result in the invalid geometries being removed.
+
+
+```{r}
+mpsz_sf <- st_make_valid(mpsz_sf)
+length(which(st_is_valid(mpsz_sf) == FALSE))
+```
+
+:::
+
+### 6.3 Projection system transformation
+
+All spatial data must be projected into EPSG:3414, which is a projected coordinate system specific to Singapore. Now, we verify whether the current projected CRS of the data is correct and if necessary, transform them.
+
+::: panel-tabset
+## Grab-Posisi
+
+
+```{r}
+st_crs(origin_sf)
+```
+
+
+## Road Data
+
+
+```{r}
+st_crs(road_sf)
+```
+
+
+The data is not in EPSG:3414, therefore, we do a transformation to assign it the right code.
+
+
+```{r}
+road_sf <- st_set_crs(road_sf, 3414)
+st_crs(road_sf)
+```
+
+
+## MPSZ Data
+
+
+```{r}
+st_crs(mpsz_sf)
+```
+
+
+The data is not in EPSG:3414, therefore, we do a transformation to assign it the right code.
+
+
+```{r}
+mpsz_sf <- st_set_crs(mpsz_sf, 3414)
+st_crs(mpsz_sf)
+```
+
+:::
+
+### 6.4 Preparing Singapore boundary layer
+
+The MPSZ data includes subzone boundaries, however our needs are confined to Singapore's general boundary. To do this, we will use the st_union function, which consolidates or combines geometric features into a single geometry, resulting in the combined border of all subzones in the dataset.
+
+
+```{r}
+sg_sf <- mpsz_sf %>%
+  st_union() 
+```
+
+```{r}
+plot(sg_sf, main = "Singapore Boundary Layer")
+```
+
+
+### 6.5 Preparing Singapore road layer
+
+For this study, we are also required to extract the road layer specific to Singapore. This can be done with the st_intersection function. This function identifies and retains the spatial intersections between geometries, allowing us to isolate the road segments that fall within the boundaries of Singapore.
+
+
+```{r}
+roadSG_sf <- st_intersection(road_sf, sg_sf)
+```
+
+
+### 6.6 Mapping geospatial data sets with tmap
+
+Let us visualize our data!
+
+::: panel-tabset
+## Origins
+
+
+```{r}
+tmap_mode('plot')
+tm_shape(mpsz_sf) + 
+  tm_polygons(col = "#F0E1D7", alpha = 0.5) + 
+  tm_shape(origin_sf) +
+  tm_dots(size = 0.01, col = "#2B2B2B")
+```
+
+
+## Road Network
+
+
+```{r}
+tmap_mode('plot')
+tm_shape(origin_sf) + 
+  tm_dots(size = 0.2, col = "#2B2B2B") + 
+  tm_shape(roadSG_sf) +
+  tm_lines(lwd = 0.1, col = "#BF8D7A")
+```
+
+:::
+
+## **7. Preparation before Deriving Kernel Density Estimation**
+
+### 7.1 Creating ppp objects
+
+To use the functionalities provided by the spatstat package, our spatial data needs to be in the form of a point pattern object (ppp). In this section, we will transform our spatial data, which is currently stored as sf tibble data frames, into ppp objects using the as.ppp() function.
+
+
+```{r}
+origin_ppp <- as.ppp(origin_sf)
+```
+
+```{r}
+summary(origin_ppp)
+```
+
+
+Now, we plot origin_ppp.
+
+
+```{r}
+plot(origin_ppp)
+```
+
+
+### 7.2 Handling duplicated points
+
+We check for any duplication in a ppp object using the code below.
+
+
+```{r}
+any(duplicated(origin_ppp))
+```
+
+
+The result is false, which indicates that there are no duplicated points in origin_ppp. Therefore, jittering, which is used to address overlapping points, will not be necessary in this context.
+
+### 7.3 Creating an owin object
+
+When analysing spatial point patterns, it is best to confine the analysis within a specific geographical area such as the Singapore boundary. In spatstat, an owin object is uniquely designed to represent this polygonal region.
+
+
+```{r}
+sg_owin <- as.owin(sg_sf)
+```
+
+
+Now, we plot and display the summary statistics of the output generated.
+
+
+```{r}
+plot(sg_owin)
+```
+
+```{r}
+summary(sg_owin)
+```
+
+
+### 7.4 Combining point events object and owin object
+
+This is the last step before deriving kernel density estimation. In this section, we extract Grab origin points that are located within Singapore by using the code below.
+
+
+```{r}
+originSG_ppp = origin_ppp[sg_owin]
+summary(originSG_ppp)
+```
+
+
+Here is the visualization of the resulting output.
+
+
+```{r}
+plot(originSG_ppp)
+```
+
+
+## **9. Deriving Kernel Density Estimation**
+
+### 9.1 Rescaling data from meter to kilometer
+
+The spatial data is in the SVY21 projection, and the unit of measurement for SVY21 is meters. Therefore, it is important to convert the unit of measurement to kilometers.
+
+
+```{r}
+originSG_ppp.km <- rescale(originSG_ppp, 1000, "km")
+```
+
+
+### 9.2 Choosing bandwidth & plotting map
+
+Online sources recommend using the bw.ppl() algorithm for spatial patterns characterized by tight clusters, as it tends to produce more suitable values. However, they emphasize that if the goal is to identify a single tight cluster amid random noise, then the bw.diggle() method would likely be more effective. There are also methods such as bw.scott() and bw.CvL(). Let us compare these bandwidths with our previous tmap visualization.
+
+::: panel-tabset
+## bw.diggle
+
+
+```{r}
+plot(density(originSG_ppp.km,
+             sigma=bw.diggle,
+             edge=TRUE,
+             kernel="gaussian"))
+```
+
+
+## bw.ppl
+
+
+```{r}
+plot(density(originSG_ppp.km,
+             sigma=bw.ppl,
+             edge=TRUE,
+             kernel="gaussian"))
+```
+
+
+## bw.scott
+
+
+```{r}
+plot(density(originSG_ppp.km,
+             sigma=bw.scott,
+             edge=TRUE,
+             kernel="gaussian"))
+```
+
+
+## bw.CvL
+
+
+```{r}
+plot(density(originSG_ppp.km,
+             sigma=bw.CvL,
+             edge=TRUE,
+             kernel="gaussian"))
+```
+
+
+## Origins
+
+
+```{r}
+tmap_mode('plot')
+tm_shape(mpsz_sf) + 
+  tm_polygons(col = "#F0E1D7", alpha = 0.5) + 
+  tm_shape(origin_sf) +
+  tm_dots(size = 0.01, col = "#2B2B2B")
+```
+
+:::
+
+The visual analysis of the maps reveals that both bw.scott() and bw.CvL() result in more oversmoothed representations. This is evident in the overly spread gradient with bw.scott() and the merging of high-density regions into a uniform surface with bw.CvL(), making spatial patterns less apparent.
+
+On the other hand, the maps generated with bw.diggle() and bw.ppl() show distinct differences. The bw.ppl() map appears to be more accurate, showcasing well-defined clusters that highlight concentrated areas, much like the spatial distribution observed in the tmap of Grab origin points.
+
+For the final kernel density estimation map, the bandwidth method bw.ppl() will be used with the default Gaussian kernel method.
+
+Final:
+
+
+```{r}
+grab_kde <- density(originSG_ppp.km,
+             sigma=bw.ppl,
+             edge=TRUE,
+             kernel="gaussian")
+
+plot(grab_kde)
+```
+
+
+### 9.3 Kernel density estimation maps on OpenStreetMap
+
+In this section, we will plot our kernel density estimation maps on OpenStreetMap. To achieve this, we must first convert the kernel density estimation maps into raster objects.
+
+
+```{r}
+gridded_grab_kde <- as.SpatialGridDataFrame.im(grab_kde)
+
+raster_grab_kde <- raster(gridded_grab_kde)
+```
+
+
+Now, let's take a look at this raster object.
+
+
+```{r}
+raster_grab_kde
+```
+
+
+As shown above, the CRS of the raster object is NA. This means that it has to be assigned a projection system.
+
+
+```{r}
+projection(raster_grab_kde) <- CRS("+init=EPSG:3414 +units=km")
+raster_grab_kde
+```
+
+
+Here is the kernel density estimation maps on OpenStreetMap.
+
+
+```{r}
+tm_basemap("OpenStreetMap") +
+tm_shape(raster_grab_kde) +
+  tm_raster("v", palette = "PuRd", alpha=0.65) + 
+  tm_layout(legend.position = c("right", "bottom"), 
+            main.title = "Grab Origin Points Density Map",
+            main.title.position = 'center',
+            main.title.size = 1,
+            frame = FALSE)
+```
+
+
+### 9.4 Analysis of kernel density estimation maps
+
+Based on the kernel density maps above, we observe a number of clusters, two of which are more notable – one concentrated in the east and another larger cluster in the central region. Below is a map showing the regions in Singapore, and our observation matches the map.
+
+![](/data/Singapore-District-Map.jpg){fig-align="center"}
+
+**East Region Concentration:** The unique concentration noticed in Singapore's eastern region can be attributed to the fact that it is close to Changi Airport. Changi Airport, as a major international hub, has a high volume of traffic, including both locals and visitors. The kernel density map could be reflecting the increased human mobility as they employ Grab services to go to and from the airport.
+
+**Central Business District (CBD) Cluster:** Moving towards the central region, we see a larger cluster, primarily in the Central Business District (CBD). This concentration is to be expected given that the CBD is Singapore's financial and commercial core. The daily influx of people commuting to and from work in this area adds to the high human mobility.
+
+**West and North Region Concentration:** Unlike the more concentrated clusters found in the east and the central business area, the west and north regions have smaller clusters that appear to be slightly more dispersed from one another. The observed dispersion could be explained by the residential landscape of both regions. The presence of numerous residential areas, industrial zones, and educational institutions affects human mobility as these are common areas that people go to.
+
+## **10. Deriving Network Constrained Kernel Density Estimation**
+
+Network constrained kernel density estimation is designed specifically for analyzing spatial point events that occur on or alongside a network.
+
+Based on previous analysis, where the two clusters of primary interest were Singapore's east and central regions, we will concentrate and examine these areas in greater depth with the use of network restricted kernel density estimation. This technique will enable us to incorporate the underlying network structure, such as roads and transportation links, in order to further understand the spatial distribution of events inside these clusters.
+
+### Preparing the road layer and origin points
+
+::: panel-tabset
+## Central Region
+
+\~ Road Layer \~
+
+
+```{r}
+central_region = mpsz_sf[mpsz_sf$REGION_N=='CENTRAL REGION',]
+roads_in_central = st_intersection(roadSG_sf, central_region)
+```
+
+
+\~ Origin Points \~
+
+
+```{r}
+points_in_central = st_intersection(origin_sf, central_region)
+```
+
+
+## East Region
+
+\~ Road Layer \~
+
+
+```{r}
+east_region = mpsz_sf[mpsz_sf$REGION_N=='EAST REGION',]
+roads_in_east = st_intersection(roadSG_sf, east_region)
+```
+
+
+\~ Origin Points \~
+
+
+```{r}
+points_in_east = st_intersection(origin_sf, east_region)
+```
+
+:::
+
+### Visualising the geospatial data
+
+::: panel-tabset
+## Central Region
+
+
+```{r}
+tmap_mode('plot')
+tm_shape(points_in_central) + 
+  tm_dots(size = 0.01, col = "#2B2B2B") + 
+  tm_shape(roads_in_central) +
+  tm_lines(lwd = 0.05, col = "#F0E1D7")
+```
+
+
+## East Region
+
+
+```{r}
+tmap_mode('plot')
+tm_shape(points_in_east) + 
+  tm_dots(size = 0.01, col = "#2B2B2B") + 
+  tm_shape(roads_in_east) +
+  tm_lines(lwd = 0.05, col = "#F0E1D7")
+```
+
+:::
+
+### Preparing the lixels objects
+
+Before computing NetKDE, the SpatialLines object need to be cut into lixels with a specified minimal distance.
+
+::: panel-tabset
+## Central Region
+
+
+```{r}
+roads_in_central <- roads_in_central %>%
+  st_sf() %>%
+  st_cast("LINESTRING")
+```
+
+```{r}
+lixels_central <- lixelize_lines(roads_in_central, 
+                         750, 
+                         mindist = 375)
+```
+
+
+## East Region
+
+
+```{r}
+roads_in_east <- roads_in_east %>%
+  st_sf() %>%
+  st_cast("LINESTRING")
+```
+
+```{r}
+lixels_east <- lixelize_lines(roads_in_east, 
+                         750, 
+                         mindist = 375)
+```
+
+:::
+
+### Generating line centre points
+
+Next, we generate a SpatialPointsDataFrame (i.e. samples) with line centre points. Line center points help provide a more accurate representation of the spatial distribution of events along the network. 
+
+::: panel-tabset
+## Central Region
+
+
+```{r}
+samples_central <- lines_center(lixels_central)
+```
+
+
+## East Region
+
+
+```{r}
+samples_east <- lines_center(lixels_east)
+```
+
+:::
+
+### Performing NetKDE
+
+::: panel-tabset
+## Central Region
+
+
+```{r}
+densities <- nkde(roads_in_central, 
+                  events = points_in_central,
+                  w = rep(1,nrow(points_in_central)),
+                  samples = samples_central,
+                  kernel_name = "quartic",
+                  bw = 300, 
+                  div= "bw", 
+                  method = "simple", 
+                  digits = 1, 
+                  tol = 1,
+                  grid_shape = c(1,1), 
+                  max_depth = 8,
+                  agg = 5, 
+                  sparse = TRUE,
+                  verbose = FALSE)
+```
+
+
+## East Region
+
+
+```{r}
+densities <- nkde(roads_in_east, 
+                  events = points_in_east,
+                  w = rep(1,nrow(points_in_east)),
+                  samples = samples_east,
+                  kernel_name = "quartic",
+                  bw = 300, 
+                  div= "bw", 
+                  method = "simple", 
+                  digits = 1, 
+                  tol = 1,
+                  grid_shape = c(1,1), 
+                  max_depth = 8,
+                  agg = 5, 
+                  sparse = TRUE,
+                  verbose = FALSE)
+```
+
+:::
+
+
+## **12. References**
+
+-   Take-home Exercise 1: Geographic Analysis of the Supply and Demand of Childcare Services in Singapore by Xiao Rong Wong.
+
+-   Take-Home Exercise 2: Spatial Point Patterns Analysis of Airbnb Listings in Singapore by MEGAN SIM TZE YEN.
+
+-   Take-Home Exercise 1: Application of Spatial Point Pattern Analysis on Osun State, Nigeria by Michelle Leong Hwee-Ling.
+
+-   Hands-on Exercise 3
+
+-   In-class Exercise 2 and 3
+
+-   R for Geospatial Data Science and Analytics
+
+-   ChatGPT
+
