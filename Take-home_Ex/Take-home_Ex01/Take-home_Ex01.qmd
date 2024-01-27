@@ -519,67 +519,7 @@ points_in_east = st_intersection(origin_sf, east_region)
 ```
 :::
 
-### Visualizing geospatial data
 
-::: panel-tabset
-
-## Central Region
-
-```{r}
-tmap_mode('plot')
-tm_shape(points_in_central) + 
-  tm_dots(size = 0.2, col = "#2B2B2B") + 
-  tm_shape(roads_in_central) +
-  tm_lines(lwd = 0.1, col = "#BF8D7A")
-```
-
-## East Region
-
-```{r}
-tmap_mode('plot')
-tm_shape(points_in_east) + 
-  tm_dots(size = 0.2, col = "#2B2B2B") + 
-  tm_shape(roads_in_east) +
-  tm_lines(lwd = 0.1, col = "#BF8D7A")
-```
-
-:::
-
-### Preparing the lixels objects
-
-Before computing NetKDE, the SpatialLines object need to be cut into lixels with a specified minimal distance.
-
-::: panel-tabset
-
-## Central Region
-
-```{r}
-roads_sf <- st_set_geometry(roads_sf, "LINESTRING")
-
-```
-
-```{r}
-lixels <- lixelize_lines(roads_sf, 750, mindist = 375)
-```
-
-## East Region
-
-```{r}
-roads_in_east <- st_as_sf(roads_in_east, wkt = "geometry")
-lixels <- spNetwork::lixelize_lines(st_coordinates(roads_in_east),
-                                     750, 
-                                     mindist = 375)
-```
-
-:::
-
-### Generating line centre points
-
-Next, lines_center() of spNetwork will be used to generate a SpatialPointsDataFrame (i.e. samples) with line centre points
-
-```{r}
-#samples <- lines_center(lixels)
-```
 
 ## **12. References**
 
