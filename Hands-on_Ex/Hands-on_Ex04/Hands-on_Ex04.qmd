@@ -65,7 +65,7 @@ tmap_arrange(basemap, gdppc, asp=1, ncol=2)
 
 ## **6. Computing Contiguity Spatial Weights**
 
-In this section, we will use poly2nb() of spdep package to compute contiguity weight matrices for the study area. This function builds a neighbours list based on regions with contiguous boundaries. 
+In this section, we will use poly2nb() of spdep package to compute contiguity weight matrices for the study area. This function builds a neighbours list based on regions with contiguous boundaries.
 
 Based on the documentation, we are able to pass a “queen” argument that takes in TRUE or FALSE as options. If this argument is not specified as false, then as per the default, it is set to TRUE and this function will return a list of first order neighbours using the Queen criteria.
 
@@ -76,7 +76,7 @@ wm_q <- poly2nb(hunan, queen=TRUE)
 summary(wm_q)
 ```
 
-The summary report above shows that there are 88 area units in Hunan. The most connected area unit has 11 neighbours [85 with 11 links]. There are two area units with only one neighbour [30 65 with 1 link].
+The summary report above shows that there are 88 area units in Hunan. The most connected area unit has 11 neighbours \[85 with 11 links\]. There are two area units with only one neighbour \[30 65 with 1 link\].
 
 For each polygon in our polygon object wm_q, it lists all neighboring polygons. For example, to view the neighbours for the first polygon in the object, we use the code below:
 
@@ -125,7 +125,7 @@ The summary report is slightly different with the Rook method. The most connecte
 
 ### Visualising contiguity weights
 
-In order to create a connectivity graph for polygons, the process involves obtaining points associated with each polygon, typically achieved by using polygon centroids. The preferred method for obtaining these centroids involves using the sf package. The latitude and longitude values of these centroids are then calculated. 
+In order to create a connectivity graph for polygons, the process involves obtaining points associated with each polygon, typically achieved by using polygon centroids. The preferred method for obtaining these centroids involves using the sf package. The latitude and longitude values of these centroids are then calculated.
 
 To accomplish this, a mapping function, specifically the map_dbl variation from the purrr package, is utilized. This function applies st_centroid to each element of the geometry column of the us.bound sf object, allowing the extraction of longitude values through double bracket notation and the index 1. This approach ensures that only the longitude values corresponding to the first point in each centroid are obtained.
 
@@ -172,7 +172,7 @@ plot(wm_r, coords, pch = 19, cex = 0.6, add = TRUE, col = "red")
 
 ## **7. Computing distance based neighbours**
 
-In this section, we will create distance-based weight matrices using the dnearneigh() function from the spdep package. The dnearneigh() function does this by measuring the Euclidean distance between points. You can set a distance range using lower (d1) and upper (d2) bounds with the bounds= argument. 
+In this section, we will create distance-based weight matrices using the dnearneigh() function from the spdep package. The dnearneigh() function does this by measuring the Euclidean distance between points. You can set a distance range using lower (d1) and upper (d2) bounds with the bounds= argument.
 
 If the data is in latitude and longitude and we set longlat=TRUE or provide a two-column matrix with longitude and latitude, the function will calculate distances on the Earth's surface using the WGS84 reference ellipsoid.
 
@@ -403,7 +403,7 @@ wm_qs[[1]]
 ```
 
 ::: callout-note
-Notice that now [1] has six neighbours instead of five.
+Notice that now \[1\] has six neighbours instead of five.
 :::
 
 ```{r}

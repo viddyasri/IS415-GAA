@@ -1,0 +1,53 @@
+---
+title: "In-class Exercise 4"
+execute: 
+  warning: false
+date: "`r Sys.Date()`"
+highlight-style: dracula
+---
+
+## **1. Getting Started**
+
+We begin by installing the relevant packages. 
+
+```{r}
+pacman::p_load(sf, spdep, tmap, tidyverse, knitr, GWmodel)
+```
+
+## **2. Importing Data**
+
+### Import shapefile into r environment
+
+```{r}
+hunan <- st_read(dsn = "../../Hands-on_Ex/Hands-on_Ex04/data/geospatial", 
+                 layer = "Hunan")
+```
+
+### Import csv file into r environment
+
+```{r}
+hunan2012 <- read_csv("../../Hands-on_Ex/Hands-on_Ex04/data/aspatial/Hunan_2012.csv")
+```
+
+### Performing relational join
+
+```{r}
+hunan <- left_join(hunan,hunan2012)%>%
+  select(1:4, 7, 15)
+```
+
+## *3. Working with GWSS**
+
+```{r}
+hunan_sp <- hunan %>%
+  as_Spatial()
+```
+
+```{r}
+gwstat <- gwss(data = hunan_sp,
+               vars = "GDPPC",
+               bw = 6,
+               kernel = "bisquare",
+               adaptive = TRUE,
+               longlat = T)
+```
