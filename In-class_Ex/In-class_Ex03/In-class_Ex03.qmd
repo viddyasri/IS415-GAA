@@ -180,8 +180,7 @@ lixels <- lixelize_lines(network,
                          mindist = 375) #mindist is half of 750 (mid distance)
 ```
 
-The length of a lixel, lx_length is set to 750m, and
-The minimum length of a lixel, mindist is set to 375m.
+The length of a lixel, lx_length is set to 750m, and The minimum length of a lixel, mindist is set to 375m.
 
 #### Generating line centre points
 

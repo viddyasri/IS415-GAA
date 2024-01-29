@@ -36,7 +36,7 @@ hunan <- left_join(hunan,hunan2012)%>%
   select(1:4, 7, 15)
 ```
 
-## *3. Working with GWSS**
+## **3. Working with GWSS**
 
 ```{r}
 hunan_sp <- hunan %>%
@@ -44,6 +44,8 @@ hunan_sp <- hunan %>%
 ```
 
 ```{r}
+#be = 6 indicates 6 neighbours since adaptive is true
+#otherwise it will be 62, indicating 62km
 gwstat <- gwss(data = hunan_sp,
                vars = "GDPPC",
                bw = 6,
