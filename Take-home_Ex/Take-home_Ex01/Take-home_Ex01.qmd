@@ -50,13 +50,15 @@ The R packages that will be used in this study are:
 
 -   **dplyr:** for wrangling data
 
+-   **RColorBrewer:** for creating visually appealing and distinguishable color schemes
+
 ```{r}
 #| eval: false
 install.packages("maptools", repos = "https://packagemanager.posit.co/cran/2023-10-13")
 ```
 
 ```{r}
-pacman::p_load(sf, tidyverse, tmap, raster, spatstat, maptools, spNetwork, classInt, viridis, arrow, lubridate, dplyr)
+pacman::p_load(sf, tidyverse, tmap, raster, spatstat, maptools, spNetwork, classInt, viridis, arrow, lubridate, dplyr, RColorBrewer)
 ```
 
 ## **4. Import Data**
@@ -86,6 +88,10 @@ road_sf <- st_read(dsn = "../../data",
 glimpse(road_sf)
 ```
 
+```{r}
+st_geometry(road_sf)
+```
+
 ### 4.3 Master Plan 2019 Subzone Boundary (Excluding Sea)
 
 When using the st_read function to read a file that is not shapefile, it is necessary to explicitly specify the file format.
@@ -97,6 +103,10 @@ mpsz_sf <- st_read(dsn = "../../data",
 
 ```{r}
 glimpse(mpsz_sf)
+```
+
+```{r}
+st_geometry(mpsz_sf)
 ```
 
 ## **5. Converting Aspatial Data to Geospatial Data**
@@ -144,7 +154,7 @@ origin_df <- df %>%
 In this section, we transform origin_df into an sf tibble data frame using the st_as_sf function.
 
 ```{r}
-origin_sf <- st_as_sf(origin_df, coords = c("rawlng", "rawlat"), crs = 3414)
+origin_sf <- st_as_sf(origin_df, coords = c("rawlng", "rawlat"), crs = 4326) %>% st_transform(crs = 3414)
 ```
 
 ```{r}
@@ -224,8 +234,8 @@ st_crs(road_sf)
 The data is not in EPSG:3414, therefore, we do a transformation to assign it the right code.
 
 ```{r}
-road_sf <- st_set_crs(road_sf, 3414)
-st_crs(road_sf)
+road_sf_3414 <- st_transform(road_sf, 3414)
+st_crs(road_sf_3414)
 ```
 
 ## MPSZ Data
@@ -237,8 +247,8 @@ st_crs(mpsz_sf)
 The data is not in EPSG:3414, therefore, we do a transformation to assign it the right code.
 
 ```{r}
-mpsz_sf <- st_set_crs(mpsz_sf, 3414)
-st_crs(mpsz_sf)
+mpsz_sf_3414 <- st_transform(mpsz_sf, 3414)
+st_crs(mpsz_sf_3414)
 ```
 :::
 
@@ -247,7 +257,7 @@ st_crs(mpsz_sf)
 The MPSZ data includes subzone boundaries, however our needs are confined to Singapore's general boundary. To do this, we will use the st_union function, which consolidates or combines geometric features into a single geometry, resulting in the combined border of all subzones in the dataset.
 
 ```{r}
-sg_sf <- mpsz_sf %>%
+sg_sf <- mpsz_sf_3414 %>%
   st_union() 
 ```
 
@@ -260,7 +270,7 @@ plot(sg_sf, main = "Singapore Boundary Layer")
 For this study, we are also required to extract the road layer specific to Singapore. This can be done with the st_intersection function. This function identifies and retains the spatial intersections between geometries, allowing us to isolate the road segments that fall within the boundaries of Singapore.
 
 ```{r}
-roadSG_sf <- st_intersection(road_sf, sg_sf)
+roadSG_sf <- st_intersection(sg_sf, road_sf_3414)
 ```
 
 ### 6.6 Mapping geospatial data sets with tmap
@@ -272,7 +282,7 @@ Let us visualize our data!
 
 ```{r}
 tmap_mode('plot')
-tm_shape(mpsz_sf) + 
+tm_shape(mpsz_sf_3414) + 
   tm_polygons(col = "#F0E1D7", alpha = 0.5) + 
   tm_shape(origin_sf) +
   tm_dots(size = 0.01, col = "#2B2B2B")
@@ -283,9 +293,9 @@ tm_shape(mpsz_sf) +
 ```{r}
 tmap_mode('plot')
 tm_shape(origin_sf) + 
-  tm_dots(size = 0.2, col = "#2B2B2B") + 
+  tm_dots(size = 0.02, col = "#2B2B2B") + 
   tm_shape(roadSG_sf) +
-  tm_lines(lwd = 0.1, col = "#BF8D7A")
+  tm_lines(lwd = 0.05, col = "#BF8D7A")
 ```
 :::
 
@@ -407,7 +417,7 @@ plot(density(originSG_ppp.km,
 
 ```{r}
 tmap_mode('plot')
-tm_shape(mpsz_sf) + 
+tm_shape(mpsz_sf_3414) + 
   tm_polygons(col = "#F0E1D7", alpha = 0.5) + 
   tm_shape(origin_sf) +
   tm_dots(size = 0.01, col = "#2B2B2B")
@@ -471,11 +481,13 @@ tm_shape(raster_grab_kde) +
 
 Based on the kernel density maps above, we observe a number of clusters, two of which are more notable – one concentrated in the east and another larger cluster in the central region. Below is a map showing the regions in Singapore, and our observation matches the map.
 
+**Singapore District Map**
+
 ![](/data/Singapore-District-Map.jpg){fig-align="center"}
 
-**East Region Concentration:** The unique concentration noticed in Singapore's eastern region can be attributed to the fact that it is close to Changi Airport. Changi Airport, as a major international hub, has a high volume of traffic, including both locals and visitors. The kernel density map could be reflecting the increased human mobility as they employ Grab services to go to and from the airport.
+**East Region Concentration:** The unique concentration noticed in Singapore's eastern region can be attributed to the fact that it is close to Changi Airport. Changi Airport, as a major international hub, has a high volume of traffic, including both locals and visitors. The kernel density map could be reflecting the increased human mobility as they employ Grab services to go to and from the airport. Comparing with the Singapore district map above, the cluster seems to be formed around planning areas such as Changi and Tampines.
 
-**Central Business District (CBD) Cluster:** Moving towards the central region, we see a larger cluster, primarily in the Central Business District (CBD). This concentration is to be expected given that the CBD is Singapore's financial and commercial core. The daily influx of people commuting to and from work in this area adds to the high human mobility.
+**Central Region Cluster:** Moving towards the central region, we see a larger cluster, primarily in the Central Business District (CBD). This concentration is to be expected given that the CBD is Singapore's financial and commercial core. The daily influx of people commuting to and from work in this area adds to the high human mobility. Comparing with the Singapore district map above, the cluster seems to be formed in the core central region around planning areas such as Outram, Museum, Newton, River Valley, Singapore River, Rochor, Orchard and Downtown Core.
 
 **West and North Region Concentration:** Unlike the more concentrated clusters found in the east and the central business area, the west and north regions have smaller clusters that appear to be slightly more dispersed from one another. The observed dispersion could be explained by the residential landscape of both regions. The presence of numerous residential areas, industrial zones, and educational institutions affects human mobility as these are common areas that people go to.
 
@@ -483,9 +495,13 @@ Based on the kernel density maps above, we observe a number of clusters, two of 
 
 Network constrained kernel density estimation is designed specifically for analyzing spatial point events that occur on or alongside a network.
 
-Based on previous analysis, where the two clusters of primary interest were Singapore's east and central regions, we will concentrate and examine these areas in greater depth with the use of network restricted kernel density estimation. This technique will enable us to incorporate the underlying network structure, such as roads and transportation links, in order to further understand the spatial distribution of events inside these clusters.
+Based on previous analysis, where the two clusters of primary interest were Singapore's east and central regions, we will concentrate and examine these planning areas in these regions in greater depth with the use of network restricted kernel density estimation. This technique will enable us to incorporate the underlying network structure, such as roads and transportation links, in order to further understand the spatial distribution of events inside these clusters.
 
-### Preparing the road layer and origin points
+For the central region, we will examine the busier areas which are Orchard, the major shopping and entertainment hub, and Downtown Core, the business district.
+
+For the east region, we will examine the Tampines and Changi areas, which are both relatively close to Changi Airport.
+
+### 10.1 Preparing the road layer and origin points
 
 ::: panel-tabset
 ## Central Region
@@ -493,14 +509,19 @@ Based on previous analysis, where the two clusters of primary interest were Sing
 \~ Road Layer \~
 
 ```{r}
-central_region = mpsz_sf[mpsz_sf$REGION_N=='CENTRAL REGION',]
-roads_in_central = st_intersection(roadSG_sf, central_region)
+orchard_area = mpsz_sf_3414[mpsz_sf_3414$PLN_AREA_N=='ORCHARD',]
+roads_in_orchard = st_intersection(roadSG_sf, orchard_area)
+
+downtown_core = mpsz_sf_3414[mpsz_sf_3414$PLN_AREA_N=='DOWNTOWN CORE',]
+roads_in_downtown = st_intersection(roadSG_sf, downtown_core)
 ```
 
 \~ Origin Points \~
 
 ```{r}
-points_in_central = st_intersection(origin_sf, central_region)
+points_in_orchard = st_intersection(origin_sf, orchard_area)
+
+points_in_downtown = st_intersection(origin_sf, downtown_core)
 ```
 
 ## East Region
@@ -508,42 +529,71 @@ points_in_central = st_intersection(origin_sf, central_region)
 \~ Road Layer \~
 
 ```{r}
-east_region = mpsz_sf[mpsz_sf$REGION_N=='EAST REGION',]
-roads_in_east = st_intersection(roadSG_sf, east_region)
+tampines_area = mpsz_sf_3414[mpsz_sf_3414$PLN_AREA_N=='TAMPINES',]
+roads_in_tampines = st_intersection(roadSG_sf, tampines_area)
+
+changi_area = mpsz_sf_3414[mpsz_sf_3414$PLN_AREA_N=='CHANGI',]
+roads_in_changi = st_intersection(roadSG_sf, changi_area)
 ```
 
 \~ Origin Points \~
 
 ```{r}
-points_in_east = st_intersection(origin_sf, east_region)
+points_in_tampines = st_intersection(origin_sf, tampines_area)
+
+points_in_changi = st_intersection(origin_sf, changi_area)
 ```
 :::
 
-### Visualising the geospatial data
+### 10.2 Visualising the geospatial data
 
 ::: panel-tabset
-## Central Region
+## Central Region - Orchard
 
 ```{r}
 tmap_mode('plot')
-tm_shape(points_in_central) + 
+tm_shape(points_in_orchard) + 
   tm_dots(size = 0.02, col = "#2B2B2B") + 
-  tm_shape(roads_in_central) +
-  tm_lines(lwd = 0.05, col = "#F0E1D7")
+  tm_shape(roads_in_orchard) +
+  tm_lines(lwd = 0.05, col = "#BF8D7A") +
+  tm_layout(title = "Orchard Area")
 ```
 
-## East Region
+## Central Region - Downtown Core
 
 ```{r}
 tmap_mode('plot')
-tm_shape(points_in_east) + 
+tm_shape(points_in_downtown) + 
   tm_dots(size = 0.02, col = "#2B2B2B") + 
-  tm_shape(roads_in_east) +
-  tm_lines(lwd = 0.05, col = "#F0E1D7")
+  tm_shape(roads_in_downtown) +
+  tm_lines(lwd = 0.05, col = "#BF8D7A") +
+  tm_layout(title = "Downtown Core Area")
+```
+
+## East Region - Tampines
+
+```{r}
+tmap_mode('plot')
+tm_shape(points_in_tampines) + 
+  tm_dots(size = 0.02, col = "#2B2B2B") + 
+  tm_shape(roads_in_tampines) +
+  tm_lines(lwd = 0.05, col = "#BF8D7A") +
+  tm_layout(title = "Tampines Area")
+```
+
+## East Region - Changi
+
+```{r}
+tmap_mode('plot')
+tm_shape(points_in_changi) + 
+  tm_dots(size = 0.02, col = "#2B2B2B") + 
+  tm_shape(roads_in_changi) +
+  tm_lines(lwd = 0.05, col = "#BF8D7A") +
+  tm_layout(title = "Changi Area")
 ```
 :::
 
-### Preparing the lixels objects
+### 10.3 Preparing the lixels objects
 
 Before computing NetKDE, the SpatialLines object need to be cut into lixels with a specified minimal distance.
 
@@ -551,66 +601,419 @@ Before computing NetKDE, the SpatialLines object need to be cut into lixels with
 ## Central Region
 
 ```{r}
-roads_in_central <- roads_in_central %>%
+roads_in_orchard <- roads_in_orchard %>%
+  st_sf() %>%
+  st_cast("LINESTRING")
+
+roads_in_downtown <- roads_in_downtown %>%
   st_sf() %>%
   st_cast("LINESTRING")
 ```
 
 ```{r}
-lixels_central <- lixelize_lines(roads_in_central, 
-                         750, 
-                         mindist = 375)
+lixels_central_orchard <- lixelize_lines(roads_in_orchard, 
+                         700, 
+                         mindist = 350)
+
+lixels_central_downtown <- lixelize_lines(roads_in_downtown, 
+                         700, 
+                         mindist = 350)
 ```
 
 ## East Region
 
 ```{r}
-roads_in_east <- roads_in_east %>%
+roads_in_tampines <- roads_in_tampines %>%
+  st_sf() %>%
+  st_cast("LINESTRING")
+
+roads_in_changi <- roads_in_changi %>%
   st_sf() %>%
   st_cast("LINESTRING")
 ```
 
 ```{r}
-lixels_east <- lixelize_lines(roads_in_east, 
-                         750, 
-                         mindist = 375)
+lixels_east_tampines <- lixelize_lines(roads_in_tampines, 
+                         700, 
+                         mindist = 350)
+
+lixels_east_changi <- lixelize_lines(roads_in_changi, 
+                         700, 
+                         mindist = 350)
 ```
 :::
 
-### Generating line centre points
+### 10.4 Generating line centre points
 
-Next, we generate a SpatialPointsDataFrame (i.e. samples) with line centre points. Line center points help provide a more accurate representation of the spatial distribution of events along the network. 
+Next, we generate a SpatialPointsDataFrame (i.e. samples) with line centre points. Line center points help provide a more accurate representation of the spatial distribution of events along the network.
 
 ::: panel-tabset
 ## Central Region
 
 ```{r}
-samples_central <- lines_center(lixels_central)
+samples_central_orchard <- lines_center(lixels_central_orchard)
+
+samples_central_downtown <- lines_center(lixels_central_downtown)
 ```
 
 ## East Region
 
 ```{r}
-samples_east <- lines_center(lixels_east)
+samples_east_tampines <- lines_center(lixels_east_tampines)
+
+samples_east_changi <- lines_center(lixels_east_changi)
 ```
 :::
 
-### Performing NetKDE
+### 10.5 Performing NetKDE
 
 ::: panel-tabset
 ## Central Region
 
 ```{r}
+densities_orchard <- nkde(roads_in_orchard, 
+                  events = points_in_orchard,
+                  w = rep(1,nrow(points_in_orchard)),
+                  samples = samples_central_orchard,
+                  kernel_name = "quartic",
+                  bw = 300, 
+                  div= "bw", 
+                  method = "simple", 
+                  digits = 1, 
+                  tol = 1,
+                  grid_shape = c(1,1), 
+                  max_depth = 8,
+                  agg = 5, 
+                  sparse = TRUE,
+                  verbose = FALSE)
 
+densities_downtown <- nkde(roads_in_downtown, 
+                  events = points_in_downtown,
+                  w = rep(1,nrow(points_in_downtown)),
+                  samples = samples_central_downtown,
+                  kernel_name = "quartic",
+                  bw = 300, 
+                  div= "bw", 
+                  method = "simple", 
+                  digits = 1, 
+                  tol = 1,
+                  grid_shape = c(1,1), 
+                  max_depth = 8,
+                  agg = 5, 
+                  sparse = TRUE,
+                  verbose = FALSE)
 ```
 
 ## East Region
 
 ```{r}
+densities_tampines <- nkde(roads_in_tampines, 
+                  events = points_in_tampines,
+                  w = rep(1,nrow(points_in_tampines)),
+                  samples = samples_east_tampines,
+                  kernel_name = "quartic",
+                  bw = 300, 
+                  div= "bw", 
+                  method = "simple", 
+                  digits = 1, 
+                  tol = 1,
+                  grid_shape = c(1,1), 
+                  max_depth = 8,
+                  agg = 5, 
+                  sparse = TRUE,
+                  verbose = FALSE)
 
+densities_changi <- nkde(roads_in_changi, 
+                  events = points_in_changi,
+                  w = rep(1,nrow(points_in_changi)),
+                  samples = samples_east_changi,
+                  kernel_name = "quartic",
+                  bw = 300, 
+                  div= "bw", 
+                  method = "simple", 
+                  digits = 1, 
+                  tol = 1,
+                  grid_shape = c(1,1), 
+                  max_depth = 8,
+                  agg = 5, 
+                  sparse = TRUE,
+                  verbose = FALSE)
 ```
 :::
 
+### 10.6 Visualising NetKDE
+
+Now it is time to visualise the resulting network constrained kernel density estimation maps. Before we can visualise the NetKDE values, we will need to insert the computed density values into samples and lixels objects as density field.
+
+::: panel-tabset
+## Central Region
+
+```{r}
+samples_central_orchard$density <- densities_orchard
+samples_central_downtown$density <- densities_downtown
+
+lixels_central_orchard$density <- densities_orchard
+lixels_central_downtown$density <- densities_downtown
+```
+
+Since the SVY21 projection system is in meter, the computed density values are very small. Therefore, it is important to convert the unit of measurement to kilometers.
+
+```{r}
+samples_central_orchard$density <- samples_central_orchard$density*1000
+samples_central_downtown$density <- samples_central_downtown$density*1000
+
+lixels_central_orchard$density <- lixels_central_orchard$density*1000
+lixels_central_downtown$density <- lixels_central_downtown$density*1000
+```
+
+## East Region
+
+```{r}
+samples_east_tampines$density <- densities_tampines
+samples_east_changi$density <- densities_changi
+
+lixels_east_tampines$density <- densities_tampines
+lixels_east_changi$density <- densities_changi
+```
+
+Since the SVY21 projection system is in meter, the computed density values are very small. Therefore, it is important to convert the unit of measurement to kilometers.
+
+```{r}
+samples_east_tampines$density <- samples_east_tampines$density*1000
+samples_east_changi$density <- samples_east_changi$density*1000
+
+lixels_east_tampines$density <- lixels_east_tampines$density*1000
+lixels_east_changi$density <- lixels_east_changi$density*1000
+```
+:::
+
+Now, we plot.
+
+::: panel-tabset
+## Central Region - Orchard
+
+```{r}
+tmap_mode('plot')
+tm_shape(lixels_central_orchard) + 
+  tm_lines(col="density") + 
+  tm_shape(points_in_orchard) +
+  tm_dots() +
+  tm_layout(title = "Orchard Area")
+```
+
+## Central Region - Downtown Core
+
+```{r}
+tmap_mode('plot')
+tm_shape(lixels_central_downtown) + 
+  tm_lines(col="density") + 
+  tm_shape(points_in_downtown) +
+  tm_dots() +
+  tm_layout(title = "Downtown Core Area")
+```
+
+## East Region - Tampines
+
+```{r}
+tmap_mode('plot')
+tm_shape(lixels_east_tampines) + 
+  tm_lines(col = "density") + 
+  tm_shape(points_in_tampines) +
+  tm_dots() +
+  tm_layout(title = "Tampines Area")
+```
+
+## East Region - Changi
+
+```{r}
+tmap_mode('plot')
+tm_shape(lixels_east_changi) + 
+  tm_lines(col = "density") + 
+  tm_shape(points_in_changi) +
+  tm_dots() +
+  tm_layout(title = "Changi Area")
+```
+:::
+
+### 10.7 Analysis of network constrained kernel density estimation maps
+
+As seen in the maps generated above, the darker regions along specific road segments suggest major roads, intersections or transportation nodes with increased movement and, possibly, these nodes tend to be the spots where there is a greater demand for Grab services. The Grab origin points in these darker regions appear to form clusters, which may reflect local travel patterns and preferences in their respective regions.
+
+## **11. 2nd Order Spatial Point Patterns Analysis**
+
+In this section, we will be carrying out second-order spatial point pattern analysis to provide statistical insights that complement the visual information obtained from our previous kernel density maps. This analysis will be done on the four areas of focus from the previous section to confirm our findings.
+
+### 11.1 Creating owin and ppp objects for focal clusters
+
+We start by making owin objects of the central and east regions.
+
+```{r}
+central_owin_orchard <- as.owin(mpsz_sf_3414[mpsz_sf_3414$PLN_AREA_N == "ORCHARD",])
+
+central_owin_downtown <- as.owin(mpsz_sf_3414[mpsz_sf_3414$PLN_AREA_N == "DOWNTOWN CORE",])
+
+east_owin_tampines <- as.owin(mpsz_sf_3414[mpsz_sf_3414$PLN_AREA_N == "TAMPINES",])
+
+east_owin_changi <- as.owin(mpsz_sf_3414[mpsz_sf_3414$PLN_AREA_N == "CHANGI",])
+```
+
+Next, we combine our point events object and owin object.
+
+```{r}
+central_ppp_orchard <- origin_ppp[central_owin_orchard]
+central_ppp_downtown <- origin_ppp[central_owin_downtown]
+
+east_ppp_tampines <- origin_ppp[east_owin_tampines]
+east_ppp_changi <- origin_ppp[east_owin_changi]
+```
+
+Now, we plot.
+
+::: panel-tabset
+## Central Region
+
+```{r}
+plot(central_ppp_orchard, main = "Orchard")
+```
+
+```{r}
+plot(central_ppp_downtown, main = "Downtown Core")
+```
+
+## East Region
+
+```{r}
+plot(east_ppp_tampines, main = "Tampines")
+```
+
+```{r}
+plot(east_ppp_changi, main = "Changi")
+```
+:::
+
+### 11.2 G-Function
+
+We perform second-order spatial point pattern analysis using the G-function followed by a Monte Carlo test. The hypothesis are as follows for each of the four areas:
+
+**H0:** The distribution of Grab origin points are randomly distributed.
+
+**H1:** The distribution of Grab origin points are not randomly distributed.
+
+**Significance level:** 0.001
+
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
+
+We start by computing the G-function estimation, followed by the complete spatial randomness test.
+
+::: panel-tabset
+
+## Orchard 
+
+G-Function Estimation:
+
+```{r}
+G_Orchard = Gest(central_ppp_orchard, correction = "border")
+plot(G_Orchard)
+```
+
+Complete Spatial Randomness Test:
+
+```{r}
+G_Orchard.csr <- envelope(central_ppp_orchard, Gest, nsim = 999)
+```
+
+```{r}
+plot(G_Orchard.csr)
+```
+
+The observed G(r) is above the upper envelope which indicates that there is a significant clustering of points. Therefore, we reject the null hypothesis that Grab origin points in Orchard are randomly distributed.
+
+## Downtown 
+
+G-Function Estimation:
+
+```{r}
+G_Downtown = Gest(central_ppp_downtown, correction = "border")
+plot(G_Downtown)
+```
+
+Complete Spatial Randomness Test:
+
+```{r}
+G_Downtown.csr <- envelope(central_ppp_downtown, Gest, nsim = 999)
+```
+
+```{r}
+plot(G_Downtown.csr)
+```
+
+The observed G(r) is above the upper envelope which indicates that there is a significant clustering of points. Therefore, we reject the null hypothesis that Grab origin points in Downtown are randomly distributed.
+
+## Tampines 
+
+G-Function Estimation:
+
+```{r}
+G_Tampines = Gest(east_ppp_tampines, correction = "border")
+plot(G_Tampines)
+```
+
+Complete Spatial Randomness Test:
+
+```{r}
+G_Tampines.csr <- envelope(east_ppp_tampines, Gest, nsim = 999)
+```
+
+```{r}
+plot(G_Tampines.csr)
+```
+
+The observed G(r) is above the upper envelope which indicates that there is a significant clustering of points. Therefore, we reject the null hypothesis that Grab origin points in Tampines are randomly distributed.
+
+## Changi 
+
+G-Function Estimation:
+
+```{r}
+G_Changi = Gest(east_ppp_changi, correction = "border")
+plot(G_Changi)
+```
+
+Complete Spatial Randomness Test:
+
+```{r}
+G_Changi.csr <- envelope(east_ppp_changi, Gest, nsim = 999)
+```
+
+```{r}
+plot(G_Changi.csr)
+```
+
+The observed G(r) is above the upper envelope which indicates that there is a significant clustering of points. Therefore, we reject the null hypothesis that Grab origin points in Changi are randomly distributed.
+:::
+
+### 11.3 G-Function for the whole of Singapore
+
+As a final analysis, we perform the G-function on the whole of Singapore.
+
+G-Function Estimation:
+
+```{r}
+G_SG = Gest(originSG_ppp, correction = "border")
+plot(G_SG)
+```
+
+Complete Spatial Randomness Test:
+
+```{r}
+G_SG.csr <- envelope(originSG_ppp, Gest, nsim = 100)
+```
+
+```{r}
+plot(G_SG.csr)
+```
+
+Similar to the four planning areas, the observed G(r) is above the upper envelope which indicates that there is a significant clustering of points. Therefore, we reject the null hypothesis that Grab origin points in Singapore are randomly distributed.
 
 ## **12. References**
 
