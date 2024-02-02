@@ -20,7 +20,7 @@ This study will utilize three datasets, namely:
 
 -   Road dataset sourced from OpenStreetMap
 
--   Master Plan 2019 Subzone Boundary (Excluding Sea) from Data.gov.sg.
+-   Master Plan 2019 Subzone Boundary from Data.gov.sg.
 
 ## **3. Installation and Loading of Packages**
 
@@ -50,15 +50,13 @@ The R packages that will be used in this study are:
 
 -   **dplyr:** for wrangling data
 
--   **RColorBrewer:** for creating visually appealing and distinguishable color schemes
-
 ```{r}
 #| eval: false
 install.packages("maptools", repos = "https://packagemanager.posit.co/cran/2023-10-13")
 ```
 
 ```{r}
-pacman::p_load(sf, tidyverse, tmap, raster, spatstat, maptools, spNetwork, classInt, viridis, arrow, lubridate, dplyr, RColorBrewer)
+pacman::p_load(sf, tidyverse, tmap, raster, spatstat, maptools, spNetwork, classInt, viridis, arrow, lubridate, dplyr)
 ```
 
 ## **4. Import Data**
@@ -171,19 +169,7 @@ st_geometry(origin_sf)
 
 ## **6. Data Wrangling**
 
-### 6.1 Dropping Z dimensions
-
-Based on the information in previous sections, we can see that among the three data frames, origin_sf possesses the M dimension. To address this, we will utilize the st_zm() function, which is used to remove Z and/or M dimensions from feature geometries, resetting classes appropriately.
-
-```{r}
-origin_sf <- st_zm(origin_sf)
-```
-
-```{r}
-st_geometry(origin_sf)
-```
-
-### 6.2 Handle invalid geometries
+### 6.1 Handle invalid geometries
 
 Next, we check for invalid geometries and handle them accordingly.
 
@@ -214,7 +200,7 @@ length(which(st_is_valid(mpsz_sf) == FALSE))
 ```
 :::
 
-### 6.3 Projection system transformation
+### 6.2 Projection system transformation
 
 All spatial data must be projected into EPSG:3414, which is a projected coordinate system specific to Singapore. Now, we verify whether the current projected CRS of the data is correct and if necessary, transform them.
 
@@ -252,7 +238,7 @@ st_crs(mpsz_sf_3414)
 ```
 :::
 
-### 6.4 Preparing Singapore boundary layer
+### 6.3 Preparing Singapore boundary layer
 
 The MPSZ data includes subzone boundaries, however our needs are confined to Singapore's general boundary. To do this, we will use the st_union function, which consolidates or combines geometric features into a single geometry, resulting in the combined border of all subzones in the dataset.
 
@@ -265,7 +251,7 @@ sg_sf <- mpsz_sf_3414 %>%
 plot(sg_sf, main = "Singapore Boundary Layer")
 ```
 
-### 6.5 Preparing Singapore road layer
+### 6.4 Preparing Singapore road layer
 
 For this study, we are also required to extract the road layer specific to Singapore. This can be done with the st_intersection function. This function identifies and retains the spatial intersections between geometries, allowing us to isolate the road segments that fall within the boundaries of Singapore.
 
@@ -273,7 +259,11 @@ For this study, we are also required to extract the road layer specific to Singa
 roadSG_sf <- st_intersection(sg_sf, road_sf_3414)
 ```
 
-### 6.6 Mapping geospatial data sets with tmap
+```{r}
+plot(roadSG_sf, main = "Singapore Road Layer")
+```
+
+### 6.5 Mapping geospatial data sets with tmap
 
 Let us visualize our data!
 
@@ -426,11 +416,11 @@ tm_shape(mpsz_sf_3414) +
 
 The visual analysis of the maps reveals that both bw.scott() and bw.CvL() result in more oversmoothed representations. This is evident in the overly spread gradient with bw.scott() and the merging of high-density regions into a uniform surface with bw.CvL(), making spatial patterns less apparent.
 
-On the other hand, the maps generated with bw.diggle() and bw.ppl() show distinct differences. The bw.ppl() map appears to be more accurate, showcasing well-defined clusters that highlight concentrated areas, much like the spatial distribution observed in the tmap of Grab origin points.
+On the other hand, the maps generated with bw.diggle() and bw.ppl() show distinct differences. The bw.ppl() map appears to be more accurate, showcasing well-defined clusters that highlight concentrated areas, much like the spatial distribution observed when plotting the tmap of Grab origin points.
 
 For the final kernel density estimation map, the bandwidth method bw.ppl() will be used with the default Gaussian kernel method.
 
-Final:
+**Final:**
 
 ```{r}
 grab_kde <- density(originSG_ppp.km,
@@ -489,7 +479,7 @@ Based on the kernel density maps above, we observe a number of clusters, two of 
 
 **Central Region Cluster:** Moving towards the central region, we see a larger cluster, primarily in the Central Business District (CBD). This concentration is to be expected given that the CBD is Singapore's financial and commercial core. The daily influx of people commuting to and from work in this area adds to the high human mobility. Comparing with the Singapore district map above, the cluster seems to be formed in the core central region around planning areas such as Outram, Museum, Newton, River Valley, Singapore River, Rochor, Orchard and Downtown Core.
 
-**West and North Region Concentration:** Unlike the more concentrated clusters found in the east and the central business area, the west and north regions have smaller clusters that appear to be slightly more dispersed from one another. The observed dispersion could be explained by the residential landscape of both regions. The presence of numerous residential areas, industrial zones, and educational institutions affects human mobility as these are common areas that people go to.
+**West and North Region Concentration:** Unlike the more concentrated clusters found in the east and the central business area, the west and north regions have smaller clusters that appear to be slightly more dispersed from one another. The observed dispersion could be explained by the residential landscape of both regions. The presence of numerous residential areas, industrial zones, and educational institutions affects human mobility as these are common areas that people go to. These areas are not necessarily close to each other, prompting the people around the area to travel by Grab.
 
 ## **10. Deriving Network Constrained Kernel Density Estimation**
 
@@ -595,7 +585,7 @@ tm_shape(points_in_changi) +
 
 ### 10.3 Preparing the lixels objects
 
-Before computing NetKDE, the SpatialLines object need to be cut into lixels with a specified minimal distance.
+Before computing NetKDE, the SpatialLines object need to be cut into lixels with a specified minimal distance. As the road data is in type GEOMETRY after using st_intersection() and lixels involve LINESTRING, we first cast the road data into the appropriate geometry type.
 
 ::: panel-tabset
 ## Central Region
@@ -841,7 +831,7 @@ As seen in the maps generated above, the darker regions along specific road segm
 
 ## **11. 2nd Order Spatial Point Patterns Analysis**
 
-In this section, we will be carrying out second-order spatial point pattern analysis to provide statistical insights that complement the visual information obtained from our previous kernel density maps. This analysis will be done on the four areas of focus from the previous section to confirm our findings.
+In this section, we will be carrying out second-order spatial point pattern analysis to provide statistical insights that complement the visual information obtained from our previous kernel density maps. This analysis will be done on the four areas of focus from the previous section to confirm our findings, that the resulting kernel density maps from previous sections are clustered.
 
 ### 11.1 Creating owin and ppp objects for focal clusters
 
@@ -899,9 +889,9 @@ We perform second-order spatial point pattern analysis using the G-function foll
 
 **H1:** The distribution of Grab origin points are not randomly distributed.
 
-**Significance level:** 0.001
+**Significance level:** 0.01
 
-The null hypothesis will be rejected if p-value is smaller than alpha value of 0.001.
+The null hypothesis will be rejected if p-value is smaller than alpha value of 0.01.
 
 We start by computing the G-function estimation, followed by the complete spatial randomness test.
 
@@ -926,8 +916,6 @@ G_Orchard.csr <- envelope(central_ppp_orchard, Gest, nsim = 999)
 plot(G_Orchard.csr)
 ```
 
-The observed G(r) is above the upper envelope which indicates that there is a significant clustering of points. Therefore, we reject the null hypothesis that Grab origin points in Orchard are randomly distributed.
-
 ## Downtown 
 
 G-Function Estimation:
@@ -946,8 +934,6 @@ G_Downtown.csr <- envelope(central_ppp_downtown, Gest, nsim = 999)
 ```{r}
 plot(G_Downtown.csr)
 ```
-
-The observed G(r) is above the upper envelope which indicates that there is a significant clustering of points. Therefore, we reject the null hypothesis that Grab origin points in Downtown are randomly distributed.
 
 ## Tampines 
 
@@ -968,8 +954,6 @@ G_Tampines.csr <- envelope(east_ppp_tampines, Gest, nsim = 999)
 plot(G_Tampines.csr)
 ```
 
-The observed G(r) is above the upper envelope which indicates that there is a significant clustering of points. Therefore, we reject the null hypothesis that Grab origin points in Tampines are randomly distributed.
-
 ## Changi 
 
 G-Function Estimation:
@@ -989,12 +973,14 @@ G_Changi.csr <- envelope(east_ppp_changi, Gest, nsim = 999)
 plot(G_Changi.csr)
 ```
 
-The observed G(r) is above the upper envelope which indicates that there is a significant clustering of points. Therefore, we reject the null hypothesis that Grab origin points in Changi are randomly distributed.
 :::
+
+As seen in the plotted charts above, the observed G(r) for all four planning areas are significantly above the upper envelope of the simulation which indicates that there is a significant clustering of points. Therefore, we reject the null hypothesis that Grab origin points in Orchard are randomly distributed.
+
 
 ### 11.3 G-Function for the whole of Singapore
 
-As a final analysis, we perform the G-function on the whole of Singapore.
+As a final analysis, we perform the G-function on the entire area of Singapore to see if the findings for targeted areas hold true for the entire region and if the targeted areas can act as a representative of the overall spatial distribution.
 
 G-Function Estimation:
 
@@ -1013,7 +999,7 @@ G_SG.csr <- envelope(originSG_ppp, Gest, nsim = 100)
 plot(G_SG.csr)
 ```
 
-Similar to the four planning areas, the observed G(r) is above the upper envelope which indicates that there is a significant clustering of points. Therefore, we reject the null hypothesis that Grab origin points in Singapore are randomly distributed.
+Similar to the four planning areas, the observed G(r) is above the upper envelope of the simulation which indicates that there is a significant clustering of points. Therefore, we reject the null hypothesis that Grab origin points in Singapore are randomly distributed, proving that the spatial distribution is indeed clustered.
 
 ## **12. References**
 
