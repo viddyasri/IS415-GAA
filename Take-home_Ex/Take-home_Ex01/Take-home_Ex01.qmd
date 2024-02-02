@@ -473,7 +473,7 @@ Based on the kernel density maps above, we observe a number of clusters, two of 
 
 **Singapore District Map**
 
-![](/data/Singapore-District-Map.jpg){fig-align="center"}
+![](../../data/Singapore-District-Map.jpg){fig-align="center"}
 
 **East Region Concentration:** The unique concentration noticed in Singapore's eastern region can be attributed to the fact that it is close to Changi Airport. Changi Airport, as a major international hub, has a high volume of traffic, including both locals and visitors. The kernel density map could be reflecting the increased human mobility as they employ Grab services to go to and from the airport. Comparing with the Singapore district map above, the cluster seems to be formed around planning areas such as Changi and Tampines.
 
@@ -896,8 +896,7 @@ The null hypothesis will be rejected if p-value is smaller than alpha value of 0
 We start by computing the G-function estimation, followed by the complete spatial randomness test.
 
 ::: panel-tabset
-
-## Orchard 
+## Orchard
 
 G-Function Estimation:
 
@@ -916,7 +915,7 @@ G_Orchard.csr <- envelope(central_ppp_orchard, Gest, nsim = 999)
 plot(G_Orchard.csr)
 ```
 
-## Downtown 
+## Downtown
 
 G-Function Estimation:
 
@@ -935,7 +934,7 @@ G_Downtown.csr <- envelope(central_ppp_downtown, Gest, nsim = 999)
 plot(G_Downtown.csr)
 ```
 
-## Tampines 
+## Tampines
 
 G-Function Estimation:
 
@@ -954,7 +953,7 @@ G_Tampines.csr <- envelope(east_ppp_tampines, Gest, nsim = 999)
 plot(G_Tampines.csr)
 ```
 
-## Changi 
+## Changi
 
 G-Function Estimation:
 
@@ -972,11 +971,9 @@ G_Changi.csr <- envelope(east_ppp_changi, Gest, nsim = 999)
 ```{r}
 plot(G_Changi.csr)
 ```
-
 :::
 
 As seen in the plotted charts above, the observed G(r) for all four planning areas are significantly above the upper envelope of the simulation which indicates that there is a significant clustering of points. Therefore, we reject the null hypothesis that Grab origin points in Orchard are randomly distributed.
-
 
 ### 11.3 G-Function for the whole of Singapore
 
