@@ -493,6 +493,8 @@ For the east region, we will examine the Tampines and Changi areas, which are bo
 
 ### 10.1 Preparing the road layer and origin points
 
+First, we extract the road layer data and Grab origin points data for the specific areas of interests.
+
 ::: panel-tabset
 ## Central Region
 
@@ -536,6 +538,8 @@ points_in_changi = st_intersection(origin_sf, changi_area)
 :::
 
 ### 10.2 Visualising the geospatial data
+
+Next, we visualize the extracted data.
 
 ::: panel-tabset
 ## Central Region - Orchard

@@ -260,7 +260,7 @@ tm_shape(mpsz_pop2020)+
 
 ***Plotting choropleth map with custome break***
 
-In order to override default category breaks, the breakpoints can be set explicitly by means of the breaks argument to the tm_fill(). 
+In order to override default category breaks, the breakpoints can be set explicitly by means of the breaks argument to the tm_fill().
 
 In tmap the breaks include a minimum and maximum. As a result, in order to end up with n categories, n+1 elements must be specified in the breaks option (the values must be in increasing order).
 
@@ -269,7 +269,7 @@ In tmap the breaks include a minimum and maximum. As a result, in order to end u
 summary(mpsz_pop2020$DEPENDENCY)
 ```
 
-With reference to the results above, we set break point at 0.60, 0.70, 0.80, and 0.90. In addition, we also need to include a minimum and maximum, which we set at 0 and 100. 
+With reference to the results above, we set break point at 0.60, 0.70, 0.80, and 0.90. In addition, we also need to include a minimum and maximum, which we set at 0 and 100.
 
 ```{r}
 tm_shape(mpsz_pop2020)+

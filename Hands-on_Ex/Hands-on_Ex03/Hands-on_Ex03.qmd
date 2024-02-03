@@ -716,7 +716,7 @@ plot(G_tm.csr)
 
 #### Analysing Spatial Point Process Using F-Function
 
-The F function estimates the empty space function F(r) or its hazard rate h(r) from a point pattern in a window of arbitrary shape. 
+The F function estimates the empty space function F(r) or its hazard rate h(r) from a point pattern in a window of arbitrary shape.
 
 ##### Choa Chu Kang planning area
 
@@ -892,4 +892,3 @@ L_tm.csr <- envelope(childcare_tm_ppp, Lest, nsim = 99, rank = 1, glocal=TRUE)
 plot(L_tm.csr, . - r ~ r, 
      xlab="d", ylab="L(d)-r", xlim=c(0,500))
 ```
-

@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2024-02-02">
+<meta name="dcterms.date" content="2024-02-03">
 
 <title>IS415-GAA - Take-home Exercise 1: Application of Spatial Point Patterns Analysis to discover the geographical distribution of Grab hailing services in Singapore</title>
 <style>
@@ -141,6 +141,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="../../Hands-on_Ex/Hands-on_Ex04/Hands-on_Ex04.html" rel="" target="">
  <span class="dropdown-text">Hands-on Exercise 4</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="../../Hands-on_Ex/Hands-on_Ex05/Hands-on_Ex05.html" rel="" target="">
+ <span class="dropdown-text">Hands-on Exercise 5</span></a>
+  </li>  
     </ul>
   </li>
   <li class="nav-item dropdown ">
@@ -269,7 +273,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">February 2, 2024</p>
+      <p class="date">February 3, 2024</p>
     </div>
   </div>
   
@@ -1251,7 +1255,7 @@ values     : -1.034489e-13, 845.4849  (min, max)</code></pre>
 <p><strong>Singapore District Map</strong></p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../..\data/Singapore-District-Map.jpg" class="img-fluid figure-img"></p>
+<p><img src="../../data/Singapore-District-Map.jpg" class="img-fluid figure-img"></p>
 </figure>
 </div>
 <p><strong>East Region Concentration:</strong> The unique concentration noticed in Singapore’s eastern region can be attributed to the fact that it is close to Changi Airport. Changi Airport, as a major international hub, has a high volume of traffic, including both locals and visitors. The kernel density map could be reflecting the increased human mobility as they employ Grab services to go to and from the airport. Comparing with the Singapore district map above, the cluster seems to be formed around planning areas such as Changi and Tampines.</p>
@@ -1267,6 +1271,7 @@ values     : -1.034489e-13, 845.4849  (min, max)</code></pre>
 <p>For the east region, we will examine the Tampines and Changi areas, which are both relatively close to Changi Airport.</p>
 <section id="preparing-the-road-layer-and-origin-points" class="level3">
 <h3 class="anchored" data-anchor-id="preparing-the-road-layer-and-origin-points">10.1 Preparing the road layer and origin points</h3>
+<p>First, we extract the road layer data and Grab origin points data for the specific areas of interests.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-5-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-1" role="tab" aria-controls="tabset-5-1" aria-selected="true">Central Region</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-2" role="tab" aria-controls="tabset-5-2" aria-selected="false">East Region</a></li></ul>
 <div class="tab-content">
@@ -1307,6 +1312,7 @@ values     : -1.034489e-13, 845.4849  (min, max)</code></pre>
 </section>
 <section id="visualising-the-geospatial-data" class="level3">
 <h3 class="anchored" data-anchor-id="visualising-the-geospatial-data">10.2 Visualising the geospatial data</h3>
+<p>Next, we visualize the extracted data.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-6-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-1" role="tab" aria-controls="tabset-6-1" aria-selected="true">Central Region - Orchard</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-6-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-2" role="tab" aria-controls="tabset-6-2" aria-selected="false">Central Region - Downtown Core</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-6-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-3" role="tab" aria-controls="tabset-6-3" aria-selected="false">East Region - Tampines</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-6-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-6-4" role="tab" aria-controls="tabset-6-4" aria-selected="false">East Region - Changi</a></li></ul>
 <div class="tab-content">
@@ -1875,118 +1881,83 @@ Done.</code></pre>
 <div class="cell-output cell-output-stdout">
 <pre><code>Generating 100 simulations of CSR  ...
 1, 2, 
-[15:36 remaining, estimate finish 2024-02-03 01:10:43]
+[13:44 remaining, estimate finish 2024-02-04 00:35:40]
 3, 
-[15:18 remaining, estimate finish 2024-02-03 01:10:34]
+[13:20 remaining, estimate finish 2024-02-04 00:35:24]
 4, 
-[15:52 remaining, estimate finish 2024-02-03 01:11:20]
+[13:07 remaining, estimate finish 2024-02-04 00:35:19]
 5, 
-[16:15 remaining, estimate finish 2024-02-03 01:11:54]
+[12:47 remaining, estimate finish 2024-02-04 00:35:06]
 6, 
-[16:33 remaining, estimate finish 2024-02-03 01:12:23]
+[12:40 remaining, estimate finish 2024-02-04 00:35:08]
 7, 
-[16:18 remaining, estimate finish 2024-02-03 01:12:19]
+[13:00 remaining, estimate finish 2024-02-04 00:35:38]
 8, 
-[16:25 remaining, estimate finish 2024-02-03 01:12:38]
+[12:57 remaining, estimate finish 2024-02-04 00:35:44]
 9, 
-[17:02 remaining, estimate finish 2024-02-03 01:13:29]
+[13:10 remaining, estimate finish 2024-02-04 00:36:07]
 10, 
-[17:20 remaining, estimate finish 2024-02-03 01:14:02]
+[13:10 remaining, estimate finish 2024-02-04 00:36:16]
 11, 
-[17:24 remaining, estimate finish 2024-02-03 01:14:19]
+[13:22 remaining, estimate finish 2024-02-04 00:36:39]
 12, 
-[22:28 remaining, estimate finish 2024-02-03 01:20:15]
+[17:18 remaining, estimate finish 2024-02-04 00:41:15]
 13, 
-[21:57 remaining, estimate finish 2024-02-03 01:19:57]
+[16:55 remaining, estimate finish 2024-02-04 00:41:02]
 14, 
-[21:20 remaining, estimate finish 2024-02-03 01:19:31]
+[16:28 remaining, estimate finish 2024-02-04 00:40:44]
 15, 
-[20:56 remaining, estimate finish 2024-02-03 01:19:20]
+[16:07 remaining, estimate finish 2024-02-04 00:40:33]
 16, 
-[20:16 remaining, estimate finish 2024-02-03 01:18:51]
+[15:34 remaining, estimate finish 2024-02-04 00:40:09]
 17, 
-[19:39 remaining, estimate finish 2024-02-03 01:18:24]
+[15:04 remaining, estimate finish 2024-02-04 00:39:46]
 18, 
-[19:02 remaining, estimate finish 2024-02-03 01:17:57]
+[14:37 remaining, estimate finish 2024-02-04 00:39:27]
 19, 
-[18:34 remaining, estimate finish 2024-02-03 01:17:39]
+[14:14 remaining, estimate finish 2024-02-04 00:39:12]
 20, 
-[18:17 remaining, estimate finish 2024-02-03 01:17:35]
+[13:51 remaining, estimate finish 2024-02-04 00:38:56]
 21, 
-[18:07 remaining, estimate finish 2024-02-03 01:17:40]
+[13:30 remaining, estimate finish 2024-02-04 00:38:43]
 22, 
-[18:13 remaining, estimate finish 2024-02-03 01:18:05]
+[13:11 remaining, estimate finish 2024-02-04 00:38:31]
 23, 
-[18:07 remaining, estimate finish 2024-02-03 01:18:16]
+[12:53 remaining, estimate finish 2024-02-04 00:38:21]
 24, 
-[17:49 remaining, estimate finish 2024-02-03 01:18:11]
+[12:36 remaining, estimate finish 2024-02-04 00:38:12]
 25, 
-[17:29 remaining, estimate finish 2024-02-03 01:18:02]
+[12:22 remaining, estimate finish 2024-02-04 00:38:07]
 26, 
-[17:13 remaining, estimate finish 2024-02-03 01:18:00]
+[12:08 remaining, estimate finish 2024-02-04 00:38:01]
 27, 
-[18:03 remaining, estimate finish 2024-02-03 01:19:26]
+[12:40 remaining, estimate finish 2024-02-04 00:38:58]
 28, 
-[17:38 remaining, estimate finish 2024-02-03 01:19:13]
+[12:28 remaining, estimate finish 2024-02-04 00:38:56]
 29, 
-[17:14 remaining, estimate finish 2024-02-03 01:19:00]
+[12:15 remaining, estimate finish 2024-02-04 00:38:53]
 30, 
-[16:50 remaining, estimate finish 2024-02-03 01:18:47]
+[12:02 remaining, estimate finish 2024-02-04 00:38:48]
 31, 
-[16:24 remaining, estimate finish 2024-02-03 01:18:29]
+[11:45 remaining, estimate finish 2024-02-04 00:38:40]
 32, 
-[15:59 remaining, estimate finish 2024-02-03 01:18:13]
+[11:29 remaining, estimate finish 2024-02-04 00:38:31]
 33, 
-[15:35 remaining, estimate finish 2024-02-03 01:18:00]
+[11:14 remaining, estimate finish 2024-02-04 00:38:23]
 34, 
-[15:17 remaining, estimate finish 2024-02-03 01:17:53]
+[10:58 remaining, estimate finish 2024-02-04 00:38:15]
 35, 
-[14:58 remaining, estimate finish 2024-02-03 01:17:46]
+[10:44 remaining, estimate finish 2024-02-04 00:38:08]
 36, 
-[14:43 remaining, estimate finish 2024-02-03 01:17:44]
+[10:30 remaining, estimate finish 2024-02-04 00:38:02]
 37, 
-[14:47 remaining, estimate finish 2024-02-03 01:18:12]
+[10:16 remaining, estimate finish 2024-02-04 00:37:56]
 38, 
-[14:36 remaining, estimate finish 2024-02-03 01:18:17]
-39, 
-[14:19 remaining, estimate finish 2024-02-03 01:18:12]
-40, 
-[14:01 remaining, estimate finish 2024-02-03 01:18:05]
-41, 
-[13:43 remaining, estimate finish 2024-02-03 01:17:59]
-42, 
-[13:55 remaining, estimate finish 2024-02-03 01:18:43]
-43, 
-[13:36 remaining, estimate finish 2024-02-03 01:18:34]
-44, 
-[13:17 remaining, estimate finish 2024-02-03 01:18:26]
-45, 
-[12:58 remaining, estimate finish 2024-02-03 01:18:18]
-46, 
-[12:39 remaining, estimate finish 2024-02-03 01:18:09]
-47, 
-[12:21 remaining, estimate finish 2024-02-03 01:18:01]
-48, 
-[12:04 remaining, estimate finish 2024-02-03 01:17:55]
-49, 
-[11:52 remaining, estimate finish 2024-02-03 01:17:59]
-50, 
-[11:39 remaining, estimate finish 2024-02-03 01:18:02]
-51, 
-[11:24 remaining, estimate finish 2024-02-03 01:17:59]
-52, 
-[11:07 remaining, estimate finish 2024-02-03 01:17:54]
-53, 
-[10:50 remaining, estimate finish 2024-02-03 01:17:48]
-54, 
-[10:33 remaining, estimate finish 2024-02-03 01:17:40]
-55, 
-[10:16 remaining, estimate finish 2024-02-03 01:17:33]
-56,  [9:59 remaining] 57, 
-[10:00 remaining, estimate finish 2024-02-03 01:17:59]
-58,  [9:43 remaining] 59,  [9:27 remaining] 60,  [9:13 remaining] 61,  [8:56 remaining] 62,  [8:42 remaining] 63,  [8:28 remaining] 64,  [8:16 remaining] 65,  [8:05 remaining] 66,  [7:51 remaining] 67,  [7:36 remaining] 68,  [7:21 remaining] 69,  [7:06 remaining] 70,  [6:50 remaining] 71,  [6:45 remaining] 72,  [6:29 remaining] 73,  [6:14 remaining] 74,  [5:59 remaining] 75,  [5:45 remaining] 76,  [5:30 remaining] 77,
- [5:15 remaining] 78,  [5:00 remaining] 79,  [4:45 remaining] 80,  [4:31 remaining] 81,  [4:17 remaining] 82,  [4:04 remaining] 83,  [3:51 remaining] 84,  [3:37 remaining] 85,  [3:23 remaining] 86,  [3:13 remaining] 87,  [2:59 remaining] 88,  [2:45 remaining] 89,  [2:31 remaining] 90,  [2:17 remaining] 91,  [2:03 remaining] 92,  [1:49 remaining] 93,  [1:35 remaining] 94,  [1:22 remaining] 95,  [1:08 remaining] 96,  [55 sec remaining] 97,
- [41 sec remaining] 98,  [27 sec remaining] 99,  [14 sec remaining] 
+[10:03 remaining, estimate finish 2024-02-04 00:37:51]
+39,  [9:51 remaining] 40,  [9:39 remaining] 41,  [9:31 remaining] 42,  [9:46 remaining] 43,  [9:35 remaining] 44,  [9:24 remaining] 45,  [9:14 remaining] 46,  [9:01 remaining] 47,  [8:48 remaining] 48,  [8:35 remaining] 49,  [8:23 remaining] 50,  [8:11 remaining] 51,  [7:59 remaining] 52,  [7:47 remaining] 53,  [7:36 remaining] 54,  [7:25 remaining] 55,  [7:14 remaining] 56,  [7:03 remaining] 57,  [7:06 remaining] 58,
+ [6:56 remaining] 59,  [6:46 remaining] 60,  [6:36 remaining] 61,  [6:25 remaining] 62,  [6:14 remaining] 63,  [6:02 remaining] 64,  [5:51 remaining] 65,  [5:40 remaining] 66,  [5:29 remaining] 67,  [5:19 remaining] 68,  [5:08 remaining] 69,  [4:58 remaining] 70,  [4:48 remaining] 71,  [4:45 remaining] 72,  [4:35 remaining] 73,  [4:25 remaining] 74,  [4:15 remaining] 75,  [4:05 remaining] 76,  [3:54 remaining] 77,  [3:44 remaining] 78,
+ [3:33 remaining] 79,  [3:23 remaining] 80,  [3:13 remaining] 81,  [3:03 remaining] 82,  [2:53 remaining] 83,  [2:43 remaining] 84,  [2:33 remaining] 85,  [2:23 remaining] 86,  [2:17 remaining] 87,  [2:07 remaining] 88,  [1:57 remaining] 89,  [1:47 remaining] 90,  [1:37 remaining] 91,  [1:27 remaining] 92,  [1:18 remaining] 93,  [1:08 remaining] 94,  [58 sec remaining] 95,  [48 sec remaining] 96,  [38 sec remaining] 97,  [29 sec remaining] 98,
+ [19 sec remaining] 99,  [10 sec remaining] 
 100.
 
 Done.</code></pre>
