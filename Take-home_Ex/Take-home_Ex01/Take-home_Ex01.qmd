@@ -473,7 +473,7 @@ Based on the kernel density maps above, we observe a number of clusters, two of 
 
 **Singapore District Map**
 
-![](../../data/Singapore-District-Map.jpg){fig-align="center"}
+![](../../Singapore-District-Map.jpg){fig-align="center"}
 
 **East Region Concentration:** The unique concentration noticed in Singapore's eastern region can be attributed to the fact that it is close to Changi Airport. Changi Airport, as a major international hub, has a high volume of traffic, including both locals and visitors. The kernel density map could be reflecting the increased human mobility as they employ Grab services to go to and from the airport. Comparing with the Singapore district map above, the cluster seems to be formed around planning areas such as Changi and Tampines.
 
