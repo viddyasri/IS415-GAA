@@ -8,7 +8,7 @@ highlight-style: dracula
 
 ## **1. Getting Started**
 
-We begin by installing the relevant packages. 
+We begin by installing the relevant packages.
 
 ```{r}
 pacman::p_load(sf, spdep, tmap, tidyverse, knitr, GWmodel)
