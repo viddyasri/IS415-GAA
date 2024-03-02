@@ -30,7 +30,7 @@ pacman::p_load(sf, spdep, tmap, tidyverse)
 
 ## **2. Importing Data**
 
-First, we import the Hunan shapefile, then the csv file. Following the imports, we perform a relational join of data to update the attribute table of hunan’s SpatialPolygonsDataFrame with the attribute fields of hunan2012 dataframe. 
+First, we import the Hunan shapefile, then the csv file. Following the imports, we perform a relational join of data to update the attribute table of hunan’s SpatialPolygonsDataFrame with the attribute fields of hunan2012 dataframe.
 
 ```{r}
 hunan <- st_read(dsn = "data", 
@@ -44,6 +44,10 @@ hunan2012 <- read_csv("data/Hunan_2012.csv")
 ```{r}
 hunan <- left_join(hunan,hunan2012) %>%
   select(1:4, 7, 15)
+```
+
+```{r}
+head(hunan, n=10)
 ```
 
 ### Visualising Regional Development Indicator
@@ -195,7 +199,7 @@ abline(v=1, col="red")
 
 Spatial correlograms are great to examine patterns of spatial autocorrelation in your data or model residuals. They show the extent of correlation between pairs of spatial observations when you increase the distance (lag) between them - they are plots of some index of autocorrelation (Moran’s I or Geary’s c) against distance. They are very useful as an exploratory and descriptive tool.
 
-###  Compute Moran’s I correlogram
+### Compute Moran’s I correlogram
 
 Compute and plot a 6-lag spatial correlogram of GDPPC:
 
@@ -231,14 +235,13 @@ plot(GC_corr)
 print(GC_corr)
 ```
 
-
 ## **Local Measures of Spatial Autocorrelation**
 
 In this section, we will compute Local Measures of Spatial Autocorrelation (LMSA) by using the spdep package.
 
 ## **7. Cluster and Outlier Analysis**
 
-Local Indicators of Spatial Association or LISA are statistics that evaluate the existence of clusters in the spatial arrangement of a given variable. 
+Local Indicators of Spatial Association or LISA are statistics that evaluate the existence of clusters in the spatial arrangement of a given variable.
 
 ### Computing local Moran’s I
 
@@ -269,7 +272,7 @@ printCoefmat(data.frame(
   check.names=FALSE)
 ```
 
-Before mapping the local Moran’s I map, it is wise to append the local Moran’s I dataframe (i.e. localMI) onto the hunan SpatialPolygonDataFrame. 
+Before mapping the local Moran’s I map, it is wise to append the local Moran’s I dataframe (i.e. localMI) onto the hunan SpatialPolygonDataFrame.
 
 ```{r}
 hunan.localMI <- cbind(hunan,localMI) %>%
