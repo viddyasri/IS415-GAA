@@ -42,7 +42,7 @@ pacman::p_load(sp, rgdal, spdep, tmap, sf, ClustGeo,
                heatmaply, corrplot, psych, tidyverse, GGally)
 ```
 
-## **4. Data Import and Prepatation**
+## **4. Data Import and Preparation**
 
 ### Importing geospatial data into R environment
 
@@ -197,7 +197,7 @@ ggarrange(radio, tv, llphone, mphone, computer, internet,
 
 ### EDA using choropleth map
 
-Before we can prepare the choropleth map, we need to combine both the geospatial data object (i.e. shan_sf) and aspatial data.frame object (i.e. ict_derived) into one. This will be performed by using the left_join function of dplyr package. 
+Before we can prepare the choropleth map, we need to combine both the geospatial data object (i.e. shan_sf) and aspatial data.frame object (i.e. ict_derived) into one. This will be performed by using the left_join function of dplyr package.
 
 ```{r}
 shan_sf <- left_join(shan_sf, 
@@ -303,13 +303,13 @@ head(shan_ict, 10)
 
 ### Data Standardisation
 
-In general, multiple variables will be used in a cluster analysis. It is not unusual that the range of their values are different. 
+In general, multiple variables will be used in a cluster analysis. It is not unusual that the range of their values are different.
 
 In order to avoid a cluster analysis result that is biased to clustering variables with large values, it is useful to standardise the input variables before performing cluster analysis.
 
 ### Min-Max standardisation
 
-In the code below, the function normalize() of the heatmaply package is used to stadardisation the clustering variables by using Min-Max method. 
+In the code below, the function normalize() of the heatmaply package is used to stadardisation the clustering variables by using Min-Max method.
 
 ```{r}
 shan_ict.std <- normalize(shan_ict)
@@ -396,7 +396,7 @@ ggarrange(r, s, z,
 
 ### Computing proximity matrix
 
- We will compute the proximity matrix by using dist() of R.
+We will compute the proximity matrix by using dist() of R.
 
 dist() supports six distance proximity calculations, they are: euclidean, maximum, manhattan, canberra, binary and minkowski. The default is euclidean proximity matrix.
 
@@ -579,7 +579,7 @@ plot(shan.nb,
 ```
 
 ::: callout-note
-If you plot the network first and then the boundaries, some of the areas will be clipped. 
+If you plot the network first and then the boundaries, some of the areas will be clipped.
 :::
 
 ### Computing minimum spanning tree
@@ -641,10 +641,7 @@ plot.mst(shan.mst,
 
 ### Computing spatially constrained clusters using SKATER method
 
-The skater() takes three mandatory arguments: 
--   the first two columns of the MST matrix (i.e. not the cost)
--   the data matrix (to update the costs as units are being grouped), and 
--   the number of cuts. 
+The skater() takes three mandatory arguments: - the first two columns of the MST matrix (i.e. not the cost) - the data matrix (to update the costs as units are being grouped), and - the number of cuts.
 
 ::: callout-note
 It is set to one less than the number of clusters. So, the value specified is not the number of clusters, but the number of cuts in the graph, one less than the number of clusters.

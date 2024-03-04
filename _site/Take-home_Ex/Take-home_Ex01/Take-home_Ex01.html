@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2024-02-04">
+<meta name="dcterms.date" content="2024-03-05">
 
 <title>IS415-GAA - Take-home Exercise 1: Application of Spatial Point Patterns Analysis to discover the geographical distribution of Grab hailing services in Singapore</title>
 <style>
@@ -172,6 +172,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="dropdown-item" href="../../In-class_Ex/In-class_Ex05/In-class_Ex05.html" rel="" target="">
  <span class="dropdown-text">In-class Exercise 5</span></a>
   </li>  
+        <li>
+    <a class="dropdown-item" href="../../In-class_Ex/In-class_Ex06/In-class_Ex06.html" rel="" target="">
+ <span class="dropdown-text">In-class Exercise 6</span></a>
+  </li>  
     </ul>
   </li>
   <li class="nav-item dropdown ">
@@ -285,7 +289,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">February 4, 2024</p>
+      <p class="date">March 5, 2024</p>
     </div>
   </div>
   
@@ -1804,21 +1808,41 @@ Done.</code></pre>
 <div class="sourceCode cell-code" id="cb116"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb116-1"><a href="#cb116-1" aria-hidden="true" tabindex="-1"></a>G_Tampines.csr <span class="ot">&lt;-</span> <span class="fu">envelope</span>(east_ppp_tampines, Gest, <span class="at">nsim =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Generating 999 simulations of CSR  ...
-1, 2, 3, ......10.........20.........30.........40.........50.........60..
-.......70.........80.........90.........100.........110.........120.........130
-.........140.........150.........160.........170.........180.........190........
-.200.........210.........220.........230.........240.........250.........260......
-...270.........280.........290.........300.........310.........320.........330....
-.....340.........350.........360.........370.........380.........390.........400..
-.......410.........420.........430.........440.........450.........460.........470
-.........480.........490.........500.........510.........520.........530........
-.540.........550.........560.........570.........580.........590.........600......
-...610.........620.........630.........640.........650.........660.........670....
-.....680.........690.........700.........710.........720.........730.........740..
-.......750.........760.........770.........780.........790.........800.........810
-.........820.........830.........840.........850.........860.........870........
-.880.........890.........900.........910.........920.........930.........940......
-...950.........960.........970.........980.........990........
+1, 2, 3, ......10 [5:22 remaining] .........20 [4:33 remaining] ...
+......30 [4:06 remaining] .........40 [3:44 remaining] .........50 [3:23 remaining] ..
+.......60 [3:06 remaining] .........70 [2:51 remaining] .........80 [2:40 remaining] .
+........90 [2:30 remaining] .........100 [2:20 remaining] .........110
+ [2:11 remaining] .........120 [2:03 remaining] .........130 [1:56 remaining] .........
+140 [1:50 remaining] .........150 [1:45 remaining] .........160 [1:40 remaining] ........
+.170 [1:36 remaining] .........180 [1:31 remaining] .........190 [1:27 remaining] .......
+..200 [1:24 remaining] .........210 [1:21 remaining] .........220 [1:17 remaining] ......
+...230 [1:53 remaining] .........240 [1:49 remaining] .........250 [1:45 remaining] .....
+....260 [1:42 remaining] .........270 [1:39 remaining] .........280 [1:36 remaining] ....
+.....290 [1:33 remaining] .........300 [1:30 remaining] .........310 [1:27 remaining] ...
+......320 [1:24 remaining] .........330 [1:22 remaining] .........340 [1:19 remaining] ..
+.......350 [1:17 remaining] .........360 [1:14 remaining] .........370 [1:12 remaining] .
+........380 [1:10 remaining] .........390 [1:08 remaining] .........400
+ [1:06 remaining] .........410 [1:04 remaining] .........420 [1:02 remaining] .........
+430 [1:00 remaining] .........440 [58 sec remaining] .........450 [57 sec remaining] ........
+.460 [55 sec remaining] .........470 [53 sec remaining] .........480 [52 sec remaining] .......
+..490 [50 sec remaining] .........500 [49 sec remaining] .........510 [47 sec remaining] ......
+...520 [46 sec remaining] .........530 [45 sec remaining] .........540 [43 sec remaining] .....
+....550 [42 sec remaining] .........560 [41 sec remaining] .........570 [39 sec remaining] ....
+.....580 [38 sec remaining] .........590 [37 sec remaining] .........600 [36 sec remaining] ...
+......610 [35 sec remaining] .........620 [33 sec remaining] .........630 [32 sec remaining] ..
+.......640 [31 sec remaining] .........650 [30 sec remaining] .........660 [29 sec remaining] .
+........670 [28 sec remaining] .........680 [27 sec remaining] .........690
+ [26 sec remaining] .........700 [25 sec remaining] .........710 [24 sec remaining] .........
+720 [23 sec remaining] .........730 [22 sec remaining] .........740 [21 sec remaining] ........
+.750 [20 sec remaining] .........760 [19 sec remaining] .........770 [18 sec remaining] .......
+..780 [17 sec remaining] .........790 [16 sec remaining] .........800 [16 sec remaining] ......
+...810 [15 sec remaining] .........820 [14 sec remaining] .........830 [13 sec remaining] .....
+....840 [12 sec remaining] .........850 [11 sec remaining] .........860 [11 sec remaining] ....
+.....870 [10 sec remaining] .........880 [9 sec remaining] .........890 [8 sec remaining] ...
+......900 [7 sec remaining] .........910 [7 sec remaining] .........920 [6 sec remaining] ..
+.......930 [5 sec remaining] .........940 [4 sec remaining] .........950 [4 sec remaining] .
+........960 [3 sec remaining] .........970 [2 sec remaining] .........980
+ [1 sec remaining] .........990 [1 sec remaining] ........
 999.
 
 Done.</code></pre>
@@ -1893,83 +1917,155 @@ Done.</code></pre>
 <div class="cell-output cell-output-stdout">
 <pre><code>Generating 100 simulations of CSR  ...
 1, 2, 
-[12:03 remaining, estimate finish 2024-02-04 01:36:48]
+[40:15 remaining, estimate finish 2024-03-05 04:13:08]
 3, 
-[11:55 remaining, estimate finish 2024-02-04 01:36:47]
+[1:13:14 remaining, estimate finish 2024-03-05 04:47:13]
 4, 
-[11:44 remaining, estimate finish 2024-02-04 01:36:43]
+[58:36 remaining, estimate finish 2024-03-05 04:32:55]
 5, 
-[11:44 remaining, estimate finish 2024-02-04 01:36:51]
+[49:58 remaining, estimate finish 2024-03-05 04:24:33]
 6, 
-[11:49 remaining, estimate finish 2024-02-04 01:37:03]
+[43:53 remaining, estimate finish 2024-03-05 04:18:41]
 7, 
-[12:15 remaining, estimate finish 2024-02-04 01:37:39]
+[39:57 remaining, estimate finish 2024-03-05 04:15:01]
 8, 
-[12:09 remaining, estimate finish 2024-02-04 01:37:42]
+[37:58 remaining, estimate finish 2024-03-05 04:13:20]
 9, 
-[12:10 remaining, estimate finish 2024-02-04 01:37:51]
+[37:14 remaining, estimate finish 2024-03-05 04:12:59]
 10, 
-[12:26 remaining, estimate finish 2024-02-04 01:38:17]
+[39:49 remaining, estimate finish 2024-03-05 04:16:16]
 11, 
-[12:43 remaining, estimate finish 2024-02-04 01:38:45]
+[39:05 remaining, estimate finish 2024-03-05 04:15:57]
 12, 
-[16:11 remaining, estimate finish 2024-02-04 01:42:49]
+[49:23 remaining, estimate finish 2024-03-05 04:28:02]
 13, 
-[15:46 remaining, estimate finish 2024-02-04 01:42:33]
+[48:45 remaining, estimate finish 2024-03-05 04:27:57]
 14, 
-[15:23 remaining, estimate finish 2024-02-04 01:42:20]
+[46:07 remaining, estimate finish 2024-03-05 04:25:34]
 15, 
-[14:59 remaining, estimate finish 2024-02-04 01:42:04]
+[43:47 remaining, estimate finish 2024-03-05 04:23:28]
 16, 
-[14:30 remaining, estimate finish 2024-02-04 01:41:42]
+[41:47 remaining, estimate finish 2024-03-05 04:21:43]
 17, 
-[14:04 remaining, estimate finish 2024-02-04 01:41:24]
+[40:26 remaining, estimate finish 2024-03-05 04:20:42]
 18, 
-[13:41 remaining, estimate finish 2024-02-04 01:41:08]
+[39:48 remaining, estimate finish 2024-03-05 04:20:31]
 19, 
-[13:21 remaining, estimate finish 2024-02-04 01:40:55]
+[41:45 remaining, estimate finish 2024-03-05 04:23:30]
 20, 
-[13:02 remaining, estimate finish 2024-02-04 01:40:45]
+[40:50 remaining, estimate finish 2024-03-05 04:23:01]
 21, 
-[12:46 remaining, estimate finish 2024-02-04 01:40:37]
+[40:46 remaining, estimate finish 2024-03-05 04:23:33]
 22, 
-[12:31 remaining, estimate finish 2024-02-04 01:40:30]
+[40:23 remaining, estimate finish 2024-03-05 04:23:43]
 23, 
-[12:19 remaining, estimate finish 2024-02-04 01:40:27]
+[39:23 remaining, estimate finish 2024-03-05 04:23:07]
 24, 
-[12:11 remaining, estimate finish 2024-02-04 01:40:29]
+[38:14 remaining, estimate finish 2024-03-05 04:22:16]
 25, 
-[12:11 remaining, estimate finish 2024-02-04 01:40:42]
+[37:08 remaining, estimate finish 2024-03-05 04:21:30]
 26, 
-[12:04 remaining, estimate finish 2024-02-04 01:40:46]
+[37:24 remaining, estimate finish 2024-03-05 04:22:31]
 27, 
-[12:50 remaining, estimate finish 2024-02-04 01:42:01]
+[39:36 remaining, estimate finish 2024-03-05 04:26:11]
 28, 
-[12:33 remaining, estimate finish 2024-02-04 01:41:53]
+[39:34 remaining, estimate finish 2024-03-05 04:26:53]
 29, 
-[12:19 remaining, estimate finish 2024-02-04 01:41:47]
+[39:13 remaining, estimate finish 2024-03-05 04:27:10]
 30, 
-[12:03 remaining, estimate finish 2024-02-04 01:41:40]
+[38:20 remaining, estimate finish 2024-03-05 04:26:41]
 31, 
-[11:46 remaining, estimate finish 2024-02-04 01:41:30]
+[37:18 remaining, estimate finish 2024-03-05 04:26:00]
 32, 
-[11:30 remaining, estimate finish 2024-02-04 01:41:21]
+[36:30 remaining, estimate finish 2024-03-05 04:25:37]
 33, 
-[11:14 remaining, estimate finish 2024-02-04 01:41:13]
+[36:21 remaining, estimate finish 2024-03-05 04:26:12]
 34, 
-[10:59 remaining, estimate finish 2024-02-04 01:41:06]
+[35:33 remaining, estimate finish 2024-03-05 04:25:48]
 35, 
-[10:45 remaining, estimate finish 2024-02-04 01:41:00]
+[34:38 remaining, estimate finish 2024-03-05 04:25:13]
 36, 
-[10:31 remaining, estimate finish 2024-02-04 01:40:53]
+[33:43 remaining, estimate finish 2024-03-05 04:24:38]
 37, 
-[10:18 remaining, estimate finish 2024-02-04 01:40:48]
+[33:00 remaining, estimate finish 2024-03-05 04:24:20]
 38, 
-[10:05 remaining, estimate finish 2024-02-04 01:40:44]
-39,  [9:53 remaining] 40,  [9:42 remaining] 41,  [9:31 remaining] 42,  [9:45 remaining] 43,  [9:33 remaining] 44,  [9:22 remaining] 45,  [9:11 remaining] 46,  [8:58 remaining] 47,  [8:45 remaining] 48,  [8:32 remaining] 49,  [8:20 remaining] 50,  [8:08 remaining] 51,  [7:55 remaining] 52,  [7:44 remaining] 53,  [7:32 remaining] 54,  [7:21 remaining] 55,  [7:10 remaining] 56,  [7:00 remaining] 57,  [7:02 remaining] 58,
- [6:52 remaining] 59,  [6:43 remaining] 60,  [6:32 remaining] 61,  [6:21 remaining] 62,  [6:10 remaining] 63,  [5:59 remaining] 64,  [5:48 remaining] 65,  [5:37 remaining] 66,  [5:26 remaining] 67,  [5:16 remaining] 68,  [5:05 remaining] 69,  [4:55 remaining] 70,  [4:45 remaining] 71,  [4:44 remaining] 72,  [4:34 remaining] 73,  [4:24 remaining] 74,  [4:14 remaining] 75,  [4:04 remaining] 76,  [3:54 remaining] 77,  [3:43 remaining] 78,
- [3:33 remaining] 79,  [3:23 remaining] 80,  [3:13 remaining] 81,  [3:02 remaining] 82,  [2:52 remaining] 83,  [2:43 remaining] 84,  [2:33 remaining] 85,  [2:23 remaining] 86,  [2:16 remaining] 87,  [2:07 remaining] 88,  [1:57 remaining] 89,  [1:47 remaining] 90,  [1:37 remaining] 91,  [1:27 remaining] 92,  [1:17 remaining] 93,  [1:08 remaining] 94,  [58 sec remaining] 95,  [48 sec remaining] 96,  [38 sec remaining] 97,  [29 sec remaining] 98,
- [19 sec remaining] 99,  [10 sec remaining] 
+[32:51 remaining, estimate finish 2024-03-05 04:24:55]
+39, 
+[32:46 remaining, estimate finish 2024-03-05 04:25:39]
+40, 
+[32:00 remaining, estimate finish 2024-03-05 04:25:16]
+41, 
+[31:27 remaining, estimate finish 2024-03-05 04:25:14]
+42, 
+[32:09 remaining, estimate finish 2024-03-05 04:27:21]
+43, 
+[31:06 remaining, estimate finish 2024-03-05 04:26:30]
+44, 
+[30:05 remaining, estimate finish 2024-03-05 04:25:40]
+45, 
+[29:06 remaining, estimate finish 2024-03-05 04:24:52]
+46, 
+[28:07 remaining, estimate finish 2024-03-05 04:24:01]
+47, 
+[27:10 remaining, estimate finish 2024-03-05 04:23:14]
+48, 
+[26:16 remaining, estimate finish 2024-03-05 04:22:29]
+49, 
+[25:25 remaining, estimate finish 2024-03-05 04:21:48]
+50, 
+[24:36 remaining, estimate finish 2024-03-05 04:21:10]
+51, 
+[23:49 remaining, estimate finish 2024-03-05 04:20:36]
+52, 
+[23:07 remaining, estimate finish 2024-03-05 04:20:09]
+53, 
+[22:28 remaining, estimate finish 2024-03-05 04:19:49]
+54, 
+[21:47 remaining, estimate finish 2024-03-05 04:19:21]
+55, 
+[21:05 remaining, estimate finish 2024-03-05 04:18:51]
+56, 
+[20:23 remaining, estimate finish 2024-03-05 04:18:21]
+57, 
+[20:05 remaining, estimate finish 2024-03-05 04:18:43]
+58, 
+[19:26 remaining, estimate finish 2024-03-05 04:18:16]
+59, 
+[18:47 remaining, estimate finish 2024-03-05 04:17:50]
+60, 
+[18:10 remaining, estimate finish 2024-03-05 04:17:27]
+61, 
+[17:34 remaining, estimate finish 2024-03-05 04:17:04]
+62, 
+[17:00 remaining, estimate finish 2024-03-05 04:16:45]
+63, 
+[16:24 remaining, estimate finish 2024-03-05 04:16:22]
+64, 
+[15:49 remaining, estimate finish 2024-03-05 04:15:58]
+65, 
+[15:14 remaining, estimate finish 2024-03-05 04:15:34]
+66, 
+[14:39 remaining, estimate finish 2024-03-05 04:15:09]
+67, 
+[14:05 remaining, estimate finish 2024-03-05 04:14:45]
+68, 
+[13:32 remaining, estimate finish 2024-03-05 04:14:20]
+69, 
+[12:59 remaining, estimate finish 2024-03-05 04:13:57]
+70, 
+[12:28 remaining, estimate finish 2024-03-05 04:13:36]
+71, 
+[12:09 remaining, estimate finish 2024-03-05 04:13:57]
+72, 
+[11:40 remaining, estimate finish 2024-03-05 04:13:42]
+73, 
+[11:11 remaining, estimate finish 2024-03-05 04:13:28]
+74, 
+[10:42 remaining, estimate finish 2024-03-05 04:13:13]
+75, 
+[10:13 remaining, estimate finish 2024-03-05 04:12:57]
+76,  [9:44 remaining] 77,  [9:15 remaining] 78,  [8:47 remaining] 79,  [8:19 remaining] 80,  [7:51 remaining] 81,  [7:24 remaining] 82,  [6:58 remaining] 83,  [6:32 remaining] 84,  [6:07 remaining] 85,  [5:44 remaining] 86,  [5:24 remaining] 87,  [4:59 remaining] 88,  [4:34 remaining] 89,  [4:10 remaining] 90,  [3:46 remaining] 91,  [3:22 remaining] 92,  [2:59 remaining] 93,  [2:35 remaining] 94,  [2:12 remaining] 95,
+ [1:50 remaining] 96,  [1:28 remaining] 97,  [1:05 remaining] 98,  [43 sec remaining] 99,  [22 sec remaining] 
 100.
 
 Done.</code></pre>
