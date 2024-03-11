@@ -412,6 +412,7 @@ gwr.fixed
 Set the adaptive argument to TRUE.
 
 ```{r}
+#instead of CV, can use AICc value too
 bw.adaptive <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
                         PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE    + 
                         PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK + 
