@@ -1,0 +1,283 @@
+---
+title: "In-class Exercise 9"
+execute: 
+  warning: false
+date: "`r Sys.Date()`"
+highlight-style: dracula
+---
+
+*\*Some code blocks are commented out due to execution time*
+
+## **1. Installing and Loading R Packages**
+
+The packages that will be used are:
+
+```{r}
+pacman::p_load(spdep, GWmodel, SpatialML, rsample, tidymodels, gtsummary, rpart, rpart.plot, tmap, SpatialAcc, sf, ggstatsplot, performance)
+```
+
+## **2. Prepare Data**
+
+### Read Data
+
+```{r}
+rs_sf <- readr::read_rds("data/rds/HDB_resale.rds")
+```
+
+### Data Sampling
+
+```{r}
+set.seed(1234)
+resale_split <- initial_split(rs_sf, 
+                              prop = 5/10,)
+train_sf <- training(resale_split)
+test_sf <- testing(resale_split)
+```
+
+```{r}
+class(train_sf)
+```
+
+```{r}
+train_df <- train_sf %>%
+  st_drop_geometry() %>%
+  as.data.frame()
+
+test_df <- test_sf %>%
+  st_drop_geometry() %>%
+  as.data.frame()
+```
+
+## \*\*3. Computing Correlation Matrix
+
+```{R}
+rs_sf1 <- rs_sf %>%
+  st_drop_geometry()
+ggcorrmat(rs_sf1[, 2:17])
+```
+
+## \*\*4. Building a Non-spatial Multiple Linear Regression
+
+```{r}
+rs_mlr <- lm(RESALE_PRICE ~ FLOOR_AREA_SQM +
+                  STOREY_ORDER + REMAINING_LEASE_MTHS +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_MRT + PROX_PARK + PROX_MALL + 
+                  PROX_SUPERMARKET + 
+                  PROX_GOOD_PRISCH + 
+                  PROX_CHAS + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                data=train_df)
+
+tbl_regression(rs_mlr, 
+               intercept = TRUE) %>% 
+  add_glance_source_note(
+    label = list(sigma ~ "\U03C3"),
+    include = c(r.squared, adj.r.squared, 
+                AIC, statistic,
+                p.value, sigma))
+```
+
+### Revising mlr model
+
+```{r}
+train_df <- train_df %>%
+  select(-c(PROX_CHAS))
+train_sf <- train_sf %>%
+  select(-c(PROX_CHAS))
+test_df <- test_df %>%
+  select(-c(PROX_CHAS))
+test_sf <- test_sf %>%
+  select(-c(PROX_CHAS))
+```
+
+```{r}
+# all variables but PROX CHAS
+rs_mlr <- lm(RESALE_PRICE ~ FLOOR_AREA_SQM +
+                  STOREY_ORDER + REMAINING_LEASE_MTHS +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_MRT + PROX_PARK + PROX_MALL + 
+                  PROX_SUPERMARKET + 
+                  PROX_GOOD_PRISCH + 
+                  WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                data=train_df)
+
+tbl_regression(rs_mlr, 
+               intercept = TRUE) %>% 
+  add_glance_source_note(
+    label = list(sigma ~ "\U03C3"),
+    include = c(r.squared, adj.r.squared, 
+                AIC, statistic,
+                p.value, sigma))
+```
+
+## **5. Preparing Coordinates Data**
+
+```{r}
+coords <- st_coordinates(rs_sf)
+coords_train <- st_coordinates(train_sf)
+coords_test <- st_coordinates(test_sf)
+```
+
+## **6. Calibrating Predictive Model**
+
+```{r}
+set.seed(1234)
+rs_rp <- rpart(formula = RESALE_PRICE ~ FLOOR_AREA_SQM +
+                  STOREY_ORDER + REMAINING_LEASE_MTHS +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_MRT + PROX_PARK + PROX_MALL + 
+                  PROX_SUPERMARKET + 
+                  PROX_GOOD_PRISCH + 
+                  WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+             data=train_df)
+rs_rp
+```
+
+```{r}
+rpart.plot(rs_rp)
+```
+
+## **7. Calibrating Random Forest Model**
+
+```{r}
+set.seed(1234)
+rs_rf <- ranger(formula = RESALE_PRICE ~ FLOOR_AREA_SQM +
+                  STOREY_ORDER + REMAINING_LEASE_MTHS +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_MRT + PROX_PARK + PROX_MALL + 
+                  PROX_SUPERMARKET + 
+                  PROX_GOOD_PRISCH + 
+                  WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+             data=train_df,
+             importance = "impurity")
+rs_rf
+```
+
+```{r}
+vi <- as.data.frame(rs_rf$variable.importance)
+vi$variables <- rownames(vi)
+vi <- vi %>%
+  rename(vi = "rs_rf$variable.importance")
+```
+
+```{r}
+ggplot(data = vi,
+       aes(x = vi,
+           y = reorder(variables, vi))) +
+  geom_bar(stat="identity")
+```
+
+## **8. Calibrating Geographical Random Forest Model**
+
+```{r}
+# set.seed(1234)
+# rs_grf <- grf(formula = RESALE_PRICE ~ FLOOR_AREA_SQM +
+#                   STOREY_ORDER + REMAINING_LEASE_MTHS +
+#                   PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+#                   PROX_MRT + PROX_PARK + PROX_MALL + 
+#                   PROX_SUPERMARKET + 
+#                   PROX_GOOD_PRISCH + 
+#                   WITHIN_350M_KINDERGARTEN +
+#                   WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+#                   WITHIN_1KM_PRISCH,
+#                   dframe=train_df, 
+#                   bw.min=25,
+#                   bw.max=60,
+#                   bw=55,
+#                   step=1,
+#                   nthreads=16,
+#                   forest=FALSE,
+#                   weighted=TRUE,
+#                   kernel="adaptive",
+#                   coords=coords_train)
+```
+
+```{r}
+#write_rds(rs_grf, "data/models/rs_grf.rds")
+```
+
+## **9. Predicting with Test Data**
+
+```{r}
+test_data <- cbind(test_sf, coords_test) %>%
+  st_drop_geometry()
+```
+
+```{r}
+# grf_pred <- predict.grf(rs_grf, 
+#                          test_df, 
+#                          x.var.name="X",
+#                          y.var.name="Y", 
+#                          local.w=1,
+#                          global.w=0)
+```
+
+### Convert to data frame and combine
+
+```{r}
+grf_pred <- readr::read_rds("data/models/grf_pred.rds")
+grf_pred_df <- as.data.frame(grf_pred)
+```
+
+```{r}
+test_pred <- test_df %>%
+  select(RESALE_PRICE) %>%
+  cbind(grf_pred_df)
+```
+
+```{r}
+rf_pred <- predict(rs_rf, test_df)
+```
+
+```{r}
+rf_pred_df <- as.data.frame(rf_pred$predictions) %>%
+  rename(rf_pred = "rf_pred$predictions")
+```
+
+```{r}
+test_pred <- cbind(test_pred, rf_pred_df)
+```
+
+```{r}
+mlr_pred <- predict(rs_mlr, test_df)
+```
+
+```{r}
+# must fix code
+# mlr_pred_df <- as.data.frame(mlr_pred$predictions) %>%
+#   rename(mlr_pred = "mlr_pred$predictions")
+```
+
+```{r}
+# test_pred <- cbind(test_pred, mlr_pred_df)
+```
+
+### Comparison
+
+```{r}
+# mc <- test_pred %>%
+#   pivot_longer(cols = c(2:4),
+#                names_to = "models",
+#                values_to = "predicted")
+```
+
+```{r}
+# mc %>%
+#   group_by(models) %>%
+#   yardstick::rmse(predictions)
+```
+
+```{r}
+# ggplot(data = test_pred,
+#        aes(x = grf_pred,
+#            y = RESALE_PRICE)) +
+#   geom_point()
+```

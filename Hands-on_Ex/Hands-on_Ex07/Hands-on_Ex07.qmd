@@ -1,824 +1,535 @@
 ---
-title: "Hands-on Exercise 7"
+title: "In-class Exercise 7"
 execute: 
   warning: false
 date: "`r Sys.Date()`"
 highlight-style: dracula
 ---
 
-## **Geographical Segmentation with Spatially Constrained Clustering Techniques**
+## **1. Overview - Geographically Weighted Regression**
 
-## **1. Overview**
-
-In this hands-on exercise, we will learn how to delineate homogeneous regions by using geographically referenced multivariate data. There are two major analysis, namely:
-
--   hierarchical cluster analysis; and
--   spatially constrained cluster analysis.
-
-In this exercise, we are interested to delineate the Shan State, Myanmar into homogeneous regions by using multiple Information and Communication technology (ICT) measures, namely: Radio, Television, Land line phone, Mobile phone, Computer, and Internet at home.
+Geographically weighted regression (GWR) is a spatial statistical technique that takes non-stationary variables into consideration (e.g., climate; demographic factors; physical environment characteristics) and models the local relationships between these independent variables and an outcome of interest (also known as the dependent variable).
 
 ## **2. The Data**
 
--   Myanmar Township Boundary Data. This is GIS data in ESRI shapefile format. It consists of township boundary information of Myanmar.
--   Shan-ICT.csv: This is an extract of The 2014 Myanmar Population and Housing Census Myanmar at the township level.
+The datasets used for this exercise are:
 
-## **3. Installing and Loading R packages**
+-   URA Master Plan subzone boundary in shapefile format
+-   condo_resale_2015 in csv format
 
-The R packages needed for this exercise are as follows:
-
-**Spatial data handling :** sf, rgdal and spdep
-
-**Attribute data handling :** tidyverse, especially readr, ggplot2 and dplyr
-
-**Choropleth mapping :** tmap
-
-**Multivariate data visualisation and analysis :** coorplot, ggpubr, and heatmaply
-
-**Cluster analysis :** cluster, ClustGeo
+## \*\*3. Installing and Loading R Packages
 
 ```{r}
-pacman::p_load(sp, rgdal, spdep, tmap, sf, ClustGeo, 
-               ggpubr, cluster, factoextra, NbClust,
-               heatmaply, corrplot, psych, tidyverse, GGally)
+pacman::p_load(olsrr, corrplot, ggpubr, sf, spdep, GWmodel, tmap, tidyverse, gtsummary, ggstatsplot)
 ```
 
-## **4. Data Import and Preparation**
+## **4. Geospatial Data Wrangling**
 
-### Importing geospatial data into R environment
+### Importing geospatial data
 
 ```{r}
-shan_sf <- st_read(dsn = "data/geospatial", 
-                   layer = "myanmar_township_boundaries") %>%
-  filter(ST %in% c("Shan (East)", "Shan (North)", "Shan (South)")) %>%
-  select(c(2:7))
+mpsz = st_read(dsn = "data", layer = "MP14_SUBZONE_WEB_PL")
 ```
 
-Viewing the content:
+### Updating CRS information
 
 ```{r}
-shan_sf
+mpsz_svy21 <- st_transform(mpsz, 3414)
 ```
 
 ```{r}
-glimpse(shan_sf)
+st_crs(mpsz_svy21)
 ```
 
-### Importing aspatial data into R environment
+## **5. Aspatial Data Wrangling**
+
+### Importing aspatial data
 
 ```{r}
-ict <- read_csv ("data/aspatial/Shan-ICT.csv")
+condo_resale = read_csv("data/Condo_resale_2015.csv")
 ```
 
-Summary statistics:
+Examining data:
 
 ```{r}
-summary(ict)
+glimpse(condo_resale)
 ```
-
-### Derive new variables using dplyr package
-
-The measurement unit for the values is the number of households. Utilizing raw values from the aspatial data directly may introduce bias due to the underlying total number of households.
-
-To overcome this problem, we will derive the penetration rate of each ICT variable by using the code below.
 
 ```{r}
-ict_derived <- ict %>%
-  mutate(`RADIO_PR` = `Radio`/`Total households`*1000) %>%
-  mutate(`TV_PR` = `Television`/`Total households`*1000) %>%
-  mutate(`LLPHONE_PR` = `Land line phone`/`Total households`*1000) %>%
-  mutate(`MPHONE_PR` = `Mobile phone`/`Total households`*1000) %>%
-  mutate(`COMPUTER_PR` = `Computer`/`Total households`*1000) %>%
-  mutate(`INTERNET_PR` = `Internet at home`/`Total households`*1000) %>%
-  rename(`DT_PCODE` =`District Pcode`,`DT`=`District Name`,
-         `TS_PCODE`=`Township Pcode`, `TS`=`Township Name`,
-         `TT_HOUSEHOLDS`=`Total households`,
-         `RADIO`=`Radio`, `TV`=`Television`, 
-         `LLPHONE`=`Land line phone`, `MPHONE`=`Mobile phone`,
-         `COMPUTER`=`Computer`, `INTERNET`=`Internet at home`) 
+head(condo_resale$LONGITUDE) #see the data in XCOORD column
 ```
-
-Summary statistics of the newly derived penetration rates:
 
 ```{r}
-summary(ict_derived)
+head(condo_resale$LATITUDE) #see the data in YCOORD column
 ```
 
-::: callout-note
-Notice that six new fields have been added into the data.frame.
-:::
+```{r}
+summary(condo_resale)
+```
 
-## **5. Exploratory Data Analysis (EDA)**
+### Converting aspatial data frame into a sf object
+
+```{r}
+condo_resale.sf <- st_as_sf(condo_resale,
+                            coords = c("LONGITUDE", "LATITUDE"),
+                            crs=4326) %>%
+  st_transform(crs=3414)
+```
+
+```{r}
+head(condo_resale.sf)
+```
+
+## **6. Exploratory Data Analysis (EDA)**
 
 ### EDA using statistical graphics
 
-Histogram is useful to identify the overall distribution of the data values (i.e. left skew, right skew or normal distribution)
-
 ```{r}
-ggplot(data=ict_derived, 
-       aes(x=`RADIO`)) +
-  geom_histogram(bins=20, 
-                 color="black", 
-                 fill="light blue")
+ggplot(data=condo_resale.sf, aes(x=`SELLING_PRICE`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
 ```
 
-Boxplot is useful to detect if there are outliers.
+The figure above reveals a right skewed distribution. Statistically, the skewed dsitribution can be normalised by using log transformation. Here, we derive a new variable called LOG_SELLING_PRICE by using a log transformation and plot it.
 
 ```{r}
-ggplot(data=ict_derived, 
-       aes(x=`RADIO`)) +
-  geom_boxplot(color="black", 
-               fill="light blue")
-```
-
-We will also plot the distribution of the newly derived variables (i.e. Radio penetration rate) by using the code below.
-
-```{r}
-ggplot(data=ict_derived, 
-       aes(x=`RADIO_PR`)) +
-  geom_histogram(bins=20, 
-                 color="black", 
-                 fill="light blue")
+condo_resale.sf <- condo_resale.sf %>%
+  mutate(`LOG_SELLING_PRICE` = log(SELLING_PRICE))
 ```
 
 ```{r}
-ggplot(data=ict_derived, 
-       aes(x=`RADIO_PR`)) +
-  geom_boxplot(color="black", 
-               fill="light blue")
+ggplot(data=condo_resale.sf, aes(x=`LOG_SELLING_PRICE`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
 ```
 
-Below are the other histograms plotted to reveal the distribution of the selected variables in the ict_derived data.frame.
+### Multiple Histogram Plots distribution of variables
 
 ```{r}
-radio <- ggplot(data=ict_derived, 
-             aes(x= `RADIO_PR`)) +
-  geom_histogram(bins=20, 
-                 color="black", 
-                 fill="light blue")
+AREA_SQM <- ggplot(data=condo_resale.sf, aes(x= `AREA_SQM`)) + 
+  geom_histogram(bins=20, color="black", fill="light blue")
 
-tv <- ggplot(data=ict_derived, 
-             aes(x= `TV_PR`)) +
-  geom_histogram(bins=20, 
-                 color="black", 
-                 fill="light blue")
+AGE <- ggplot(data=condo_resale.sf, aes(x= `AGE`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
 
-llphone <- ggplot(data=ict_derived, 
-             aes(x= `LLPHONE_PR`)) +
-  geom_histogram(bins=20, 
-                 color="black", 
-                 fill="light blue")
+PROX_CBD <- ggplot(data=condo_resale.sf, aes(x= `PROX_CBD`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
 
-mphone <- ggplot(data=ict_derived, 
-             aes(x= `MPHONE_PR`)) +
-  geom_histogram(bins=20, 
-                 color="black", 
-                 fill="light blue")
+PROX_CHILDCARE <- ggplot(data=condo_resale.sf, aes(x= `PROX_CHILDCARE`)) + 
+  geom_histogram(bins=20, color="black", fill="light blue")
 
-computer <- ggplot(data=ict_derived, 
-             aes(x= `COMPUTER_PR`)) +
-  geom_histogram(bins=20, 
-                 color="black", 
-                 fill="light blue")
+PROX_ELDERLYCARE <- ggplot(data=condo_resale.sf, aes(x= `PROX_ELDERLYCARE`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
 
-internet <- ggplot(data=ict_derived, 
-             aes(x= `INTERNET_PR`)) +
-  geom_histogram(bins=20, 
-                 color="black", 
-                 fill="light blue")
+PROX_URA_GROWTH_AREA <- ggplot(data=condo_resale.sf, 
+                               aes(x= `PROX_URA_GROWTH_AREA`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_HAWKER_MARKET <- ggplot(data=condo_resale.sf, aes(x= `PROX_HAWKER_MARKET`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_KINDERGARTEN <- ggplot(data=condo_resale.sf, aes(x= `PROX_KINDERGARTEN`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_MRT <- ggplot(data=condo_resale.sf, aes(x= `PROX_MRT`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_PARK <- ggplot(data=condo_resale.sf, aes(x= `PROX_PARK`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_PRIMARY_SCH <- ggplot(data=condo_resale.sf, aes(x= `PROX_PRIMARY_SCH`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+PROX_TOP_PRIMARY_SCH <- ggplot(data=condo_resale.sf, 
+                               aes(x= `PROX_TOP_PRIMARY_SCH`)) +
+  geom_histogram(bins=20, color="black", fill="light blue")
+
+ggarrange(AREA_SQM, AGE, PROX_CBD, PROX_CHILDCARE, PROX_ELDERLYCARE, 
+          PROX_URA_GROWTH_AREA, PROX_HAWKER_MARKET, PROX_KINDERGARTEN, PROX_MRT,
+          PROX_PARK, PROX_PRIMARY_SCH, PROX_TOP_PRIMARY_SCH,  
+          ncol = 3, nrow = 4)
 ```
 
-The code below groups the above histograms together:
+### Drawing Statistical Point Map
+
+Lastly, we want to reveal the geospatial distribution condominium resale prices in Singapore. For this, we will use the tmap package.
 
 ```{r}
-ggarrange(radio, tv, llphone, mphone, computer, internet, 
-          ncol = 3, 
-          nrow = 2)
-```
-
-### EDA using choropleth map
-
-Before we can prepare the choropleth map, we need to combine both the geospatial data object (i.e. shan_sf) and aspatial data.frame object (i.e. ict_derived) into one. This will be performed by using the left_join function of dplyr package.
-
-```{r}
-shan_sf <- left_join(shan_sf, 
-                     ict_derived, by=c("TS_PCODE"="TS_PCODE"))
-  
-write_rds(shan_sf, "data/shan_sf.rds")
+mpsz_svy21 <- st_make_valid(mpsz_svy21)
 ```
 
 ```{r}
-shan_sf <- read_rds("data/shan_sf.rds")
-```
-
-Preparing the map:
-
-```{r}
-qtm(shan_sf, "RADIO_PR")
-```
-
-In order to reveal that the distribution shown in the choropleth map above are biased to the underlying total number of households at the townships, we will create two choropleth maps. One will be for the total number of households (i.e. TT_HOUSEHOLDS.map) and the other will be for the total number of household with Radio (RADIO.map).
-
-```{r}
-TT_HOUSEHOLDS.map <- tm_shape(shan_sf) + 
-  tm_fill(col = "TT_HOUSEHOLDS",
-          n = 5,
-          style = "jenks", 
-          title = "Total households") + 
-  tm_borders(alpha = 0.5) 
-
-RADIO.map <- tm_shape(shan_sf) + 
-  tm_fill(col = "RADIO",
-          n = 5,
-          style = "jenks",
-          title = "Number Radio ") + 
-  tm_borders(alpha = 0.5) 
-
-tmap_arrange(TT_HOUSEHOLDS.map, RADIO.map,
-             asp=NA, ncol=2)
-```
-
-::: callout-note
-Notice that the choropleth maps above clearly show that townships with relatively larger number ot households are also showing relatively higher number of radio ownership.
-:::
-
-Now we plot the choropleth maps showing the distribution of total number of households and radio penetration rate.
-
-```{r}
-tm_shape(shan_sf) +
-    tm_polygons(c("TT_HOUSEHOLDS", "RADIO_PR"),
-                style="jenks") +
-    tm_facets(sync = TRUE, ncol = 2) +
-  tm_legend(legend.position = c("right", "bottom"))+
-  tm_layout(outer.margins=0, asp=0)
-```
-
-## **6. Correlation Analysis**
-
-In this section, we learn how to use corrplot.mixed() which is a function of the corrplot package to visualise and analyse the correlation of the input variables.
-
-```{r}
-cluster_vars.cor = cor(ict_derived[,12:17])
-corrplot.mixed(cluster_vars.cor,
-         lower = "ellipse", 
-               upper = "number",
-               tl.pos = "lt",
-               diag = "l",
-               tl.col = "black")
-```
-
-The correlation plot above shows that COMPUTER_PR and INTERNET_PR are highly correlated. This suggest that only one of them should be used in the cluster analysis instead of both.
-
-## **7. Hierarchy Cluster Analysis**
-
-### Extracting clustering variables
-
-```{r}
-cluster_vars <- shan_sf %>%
-  st_set_geometry(NULL) %>%
-  select("TS.x", "RADIO_PR", "TV_PR", "LLPHONE_PR", "MPHONE_PR", "COMPUTER_PR")
-head(cluster_vars,10)
-```
-
-::: callout-note
-Notice that the final clustering variables list does not include variable INTERNET_PR because it is highly correlated with variable COMPUTER_PR.
-:::
-
-Next, we need to change the rows by township name instead of row number.
-
-```{r}
-row.names(cluster_vars) <- cluster_vars$"TS.x"
-head(cluster_vars,10)
-```
-
-::: callout-note
-Notice that the row number has been replaced into the township name.
-:::
-
-Now, we will delete the TS.x field.
-
-```{r}
-shan_ict <- select(cluster_vars, c(2:6))
-head(shan_ict, 10)
-```
-
-### Data Standardisation
-
-In general, multiple variables will be used in a cluster analysis. It is not unusual that the range of their values are different.
-
-In order to avoid a cluster analysis result that is biased to clustering variables with large values, it is useful to standardise the input variables before performing cluster analysis.
-
-### Min-Max standardisation
-
-In the code below, the function normalize() of the heatmaply package is used to stadardisation the clustering variables by using Min-Max method.
-
-```{r}
-shan_ict.std <- normalize(shan_ict)
-summary(shan_ict.std)
-```
-
-::: callout-note
-Notice that the range of values of the clustering variables after min-max standardissation are 0-1 now.
-:::
-
-### Z-score standardisation
-
-Z-score standardisation can be performed easily by using scale() of Base R.
-
-```{r}
-shan_ict.z <- scale(shan_ict)
-describe(shan_ict.z)
-```
-
-::: callout-note
-Notice that the mean and standard deviation of the Z-score standardised clustering variables are 0 and 1 respectively.
-:::
-
-::: callout-warning
-Z-score standardisation method should only be used if we assume all variables come from some normal distribution.
-:::
-
-### Visualising the standardised clustering variables
-
-```{r}
-r <- ggplot(data=ict_derived, 
-             aes(x= `RADIO_PR`)) +
-  geom_histogram(bins=20, 
-                 color="black", 
-                 fill="light blue") +
-  ggtitle("Raw values without standardisation")
-
-shan_ict_s_df <- as.data.frame(shan_ict.std)
-s <- ggplot(data=shan_ict_s_df, 
-       aes(x=`RADIO_PR`)) +
-  geom_histogram(bins=20, 
-                 color="black", 
-                 fill="light blue") +
-  ggtitle("Min-Max Standardisation")
-
-shan_ict_z_df <- as.data.frame(shan_ict.z)
-z <- ggplot(data=shan_ict_z_df, 
-       aes(x=`RADIO_PR`)) +
-  geom_histogram(bins=20, 
-                 color="black", 
-                 fill="light blue") +
-  ggtitle("Z-score Standardisation")
-
-ggarrange(r, s, z,
-          ncol = 3,
-          nrow = 1)
+tmap_mode("view")
+tm_shape(mpsz_svy21)+
+  tm_polygons() +
+tm_shape(condo_resale.sf) +  
+  tm_dots(col = "SELLING_PRICE",
+          alpha = 0.6,
+          style="quantile") +
+  tm_view(set.zoom.limits = c(11,14))
 ```
 
 ```{r}
-r <- ggplot(data=ict_derived, 
-             aes(x= `RADIO_PR`)) +
-  geom_density(color="black",
-               fill="light blue") +
-  ggtitle("Raw values without standardisation")
-
-shan_ict_s_df <- as.data.frame(shan_ict.std)
-s <- ggplot(data=shan_ict_s_df, 
-       aes(x=`RADIO_PR`)) +
-  geom_density(color="black",
-               fill="light blue") +
-  ggtitle("Min-Max Standardisation")
-
-shan_ict_z_df <- as.data.frame(shan_ict.z)
-z <- ggplot(data=shan_ict_z_df, 
-       aes(x=`RADIO_PR`)) +
-  geom_density(color="black",
-               fill="light blue") +
-  ggtitle("Z-score Standardisation")
-
-ggarrange(r, s, z,
-          ncol = 3,
-          nrow = 1)
+tmap_mode("plot")
 ```
 
-### Computing proximity matrix
+## **7. Hedonic Pricing Modelling in R**
 
-We will compute the proximity matrix by using dist() of R.
-
-dist() supports six distance proximity calculations, they are: euclidean, maximum, manhattan, canberra, binary and minkowski. The default is euclidean proximity matrix.
+### Simple Linear Regression Method
 
 ```{r}
-proxmat <- dist(shan_ict, method = 'euclidean')
+condo.slr <- lm(formula=SELLING_PRICE ~ AREA_SQM, data = condo_resale.sf)
 ```
 
-Listing the contents:
-
 ```{r}
-proxmat
+summary(condo.slr)
 ```
 
-### Computing hierarchical clustering
+The R-squared of 0.4518 reveals that the simple regression model built is able to explain about 45% of the resale prices.
 
-In R, there are several packages provide hierarchical clustering function. In this hands-on exercise, hclust() of R stats will be used.
+Since the p-value is much smaller than 0.0001, we will reject the null hypothesis allowing us to infer that the simple linear regression model above is a good estimator of SELLING_PRICE.
 
-hclust() employs the agglomeration method to compute the cluster. Eight clustering algorithms are supported, they are: ward.D, ward.D2, single, complete, average(UPGMA), mcquitty(WPGMA), median(WPGMC) and centroid(UPGMC).
+To visualise the best fit curve on a scatterplot, we can incorporate lm() as a method function in ggplot’s geometry.
 
 ```{r}
-hclust_ward <- hclust(proxmat, method = 'ward.D')
+ggplot(data=condo_resale.sf,  
+       aes(x=`AREA_SQM`, y=`SELLING_PRICE`)) +
+  geom_point() +
+  geom_smooth(method = lm)
+```
+
+### Multiple Linear Regression Method
+
+Before building a multiple regression model, it is important to ensure that the indepdent variables used are not highly correlated to each other.
+
+```{r}
+#hands on version
+corrplot(cor(condo_resale[, 5:23]), diag = FALSE, order = "AOE",
+         tl.pos = "td", tl.cex = 0.5, method = "number", type = "upper")
+```
+
+In the code chunk above, AOE order is used. It orders the variables by using the angular order of the eigenvectors method suggested by Michael Friendly.
+
+From the scatterplot matrix, it is clear that Freehold is highly correlated to LEASE_99YEAR. In view of this, it is wise to only include one of them in the subsequent model building.
+
+### Building a hedonic pricing model using multiple linear regression method
+
+```{r}
+condo.mlr <- lm(formula = SELLING_PRICE ~ AREA_SQM + AGE    + 
+                  PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
+                  PROX_URA_GROWTH_AREA + PROX_HAWKER_MARKET + PROX_KINDERGARTEN + 
+                  PROX_MRT  + PROX_PARK + PROX_PRIMARY_SCH + 
+                  PROX_TOP_PRIMARY_SCH + PROX_SHOPPING_MALL + PROX_SUPERMARKET + 
+                  PROX_BUS_STOP + NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD, 
+                data=condo_resale.sf)
+summary(condo.mlr)
+```
+
+### Preparing Publication Quality Table: olsrr method
+
+With reference to the report above, it is clear that not all the independent variables are statistically significant. We will revise the model by removing the variables which are not statistically significant.
+
+```{r}
+condo.mlr1 <- lm(formula = SELLING_PRICE ~ AREA_SQM + AGE + 
+                   PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
+                   PROX_URA_GROWTH_AREA + PROX_MRT  + PROX_PARK + 
+                   PROX_PRIMARY_SCH + PROX_SHOPPING_MALL    + PROX_BUS_STOP + 
+                   NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+                 data=condo_resale.sf)
+ols_regress(condo.mlr1)
+```
+
+### Preparing Publication Quality Table: gtsummary method
+
+Creating publication-ready summary tables:
+
+With gtsummary package, model statistics can be included in the report by either appending them to the report table by using add_glance_table() or adding as a table source note by using add_glance_source_note()
+
+```{r}
+#default
+tbl_regression(condo.mlr1, 
+               intercept = TRUE)
+```
+
+```{r}
+#with additional summary statistics
+tbl_regression(condo.mlr1, 
+               intercept = TRUE) %>% 
+  add_glance_source_note(
+    label = list(sigma ~ "\U03C3"),
+    include = c(r.squared, adj.r.squared, 
+                AIC, statistic,
+                p.value, sigma))
+```
+
+### Testing
+
+Testing for signs of multicollinearity:
+
+```{r}
+ols_vif_tol(condo.mlr1)
+```
+
+Performing linearity assumption test:
+
+```{r}
+ols_plot_resid_fit(condo.mlr1)
+```
+
+The figure above reveals that majority of the data points are scattered around the 0 line, thus we can safely conclude that the relationship between the dependent variable and independent variables are linear.
+
+Performing normality assumption test:
+
+```{r}
+ols_plot_resid_hist(condo.mlr1)
+```
+
+The figure reveals that the residual of the multiple linear regression model (i.e. condo.mlr1) resembles a normal distribution.
+
+Formal statistical test methods:
+
+```{r}
+ols_test_normality(condo.mlr1)
+```
+
+The summary table above reveals that the p-values of the four tests are significantly smaller than the alpha value of 0.05. Hence we will reject the null hypothesis and infer that there is statistical evidence showing that the residual is not normally distributed.
+
+Testing for spatial autocorrelation:
+
+```{r}
+mlr.output <- as.data.frame(condo.mlr1$residuals)
+```
+
+```{r}
+condo_resale.res.sf <- cbind(condo_resale.sf, 
+                        condo.mlr1$residuals) %>%
+rename(`MLR_RES` = `condo.mlr1.residuals`)
+```
+
+Data conversion process:
+
+```{r}
+condo_resale.sp <- as_Spatial(condo_resale.res.sf)
+condo_resale.sp
 ```
 
 Plot:
 
 ```{r}
-plot(hclust_ward, cex = 0.6)
-```
-
-### Selecting the optimal clustering algorithm
-
-One of the challenges faced in performing hierarchical clustering is identifying stronger clustering structures. This issue can be solved by using the agnes() function of the cluster package.
-
-```{r}
-m <- c( "average", "single", "complete", "ward")
-names(m) <- c( "average", "single", "complete", "ward")
-
-ac <- function(x) {
-  agnes(shan_ict, method = x)$ac
-}
-
-map_dbl(m, ac)
-```
-
-With reference to the output above, we can see that Ward’s method provides the strongest clustering structure among the four methods assessed. Hence, in the subsequent analysis, only Ward’s method will be used.
-
-### Determining Optimal Clusters
-
-Another technical challenge faced in performing clustering analysis is determining the optimal clusters to retain.
-
-here are three commonly used methods to determine the optimal clusters, they are:
-
--   Elbow Method
--   Average Silhouette Method
--   Gap Statistic Method
-
-In this exercise, we will be exploring the Gap Statistic Method.
-
-The idea behind the gap statistic is that if the clustering structure in the original dataset is meaningful, the inertia will be significantly lower than the average inertia of random datasets. The method helps to avoid overfitting (using too many clusters) or underfitting (using too few clusters) in clustering analysis.
-
-```{r}
-set.seed(12345)
-gap_stat <- clusGap(shan_ict, 
-                    FUN = hcut, 
-                    nstart = 25, 
-                    K.max = 10, 
-                    B = 50)
-# Print the result
-print(gap_stat, method = "firstmax")
-```
-
-Plot:
-
-```{r}
-fviz_gap_stat(gap_stat)
-```
-
-With reference to the gap statistic graph above, the recommended number of clusters to retain is 1. However, it is not logical to retain only one cluster. By examining the graph, the 6-cluster gives the largest gap statistic and should be the next best cluster to pick.
-
-::: callout-note
-The NbClust package, published by Charrad et al., 2014, provides 30 indices for determining the relevant number of clusters and proposes to users the best clustering scheme from the different results obtained by varying all combinations of number of clusters, distance measures, and clustering methods.
-:::
-
-### Interpreting the dendrograms
-
-In the dendrogram displayed above, each leaf corresponds to one observation. As we move up the tree, observations that are similar to each other are combined into branches, which are themselves fused at a higher height.
-
-The height of the fusion, provided on the vertical axis, indicates the (dis)similarity between two observations. The higher the height of the fusion, the less similar the observations are.
-
-::: callout-note
-We cannot use the proximity of two observations along the horizontal axis as a criteria of their similarity.
-:::
-
-```{r}
-plot(hclust_ward, cex = 0.6)
-rect.hclust(hclust_ward, 
-            k = 6, 
-            border = 2:5)
-```
-
-### Visually-driven hierarchical clustering analysis
-
-With the heatmaply package, we are able to build both highly interactive cluster heatmaps or static cluster heatmaps.
-
-The data that was loaded was initially a data frame, but it has to be a data matrix in order to make the heatmap.
-
-```{r}
-shan_ict_mat <- data.matrix(shan_ict)
-```
-
-Building the heatmap:
-
-```{r}
-heatmaply(normalize(shan_ict_mat),
-          Colv=NA,
-          dist_method = "euclidean",
-          hclust_method = "ward.D",
-          seriate = "OLO",
-          colors = Blues,
-          k_row = 6,
-          margins = c(NA,200,60,NA),
-          fontsize_row = 4,
-          fontsize_col = 5,
-          main="Geographic Segmentation of Shan State by ICT indicators",
-          xlab = "ICT Indicators",
-          ylab = "Townships of Shan State"
-          )
-```
-
-### Mapping the clusters formed
-
-After close examination of the dendrogram above, we have decided to retain six clusters.
-
-cutree() of R Base will be used in the code below to derive a 6-cluster model.
-
-```{r}
-groups <- as.factor(cutree(hclust_ward, k=6))
-# The output is called groups. It is a list object.
-```
-
-In order to visualise the clusters, the groups object need to be appended onto shan_sf simple feature object.
-
-```{r}
-shan_sf_cluster <- cbind(shan_sf, as.matrix(groups)) %>%
-  rename(`CLUSTER`=`as.matrix.groups.`)
+tmap_mode("view")
+tm_shape(mpsz_svy21)+
+  tmap_options(check.and.fix = TRUE) +
+  tm_polygons(alpha = 0.4) +
+tm_shape(condo_resale.res.sf) +  
+  tm_dots(col = "MLR_RES",
+          alpha = 0.6,
+          style="quantile") +
+  tm_view(set.zoom.limits = c(11,14))
 ```
 
 ```{r}
-qtm(shan_sf_cluster, "CLUSTER")
+tmap_mode("plot")
 ```
 
-The choropleth map above reveals the clusters are very fragmented. The is one of the major limitations when non-spatial clustering algorithms such as hierarchical cluster analysis method is used.
+The figure above reveals that there is sign of spatial autocorrelation.
 
-## **8. Spatially Constrained Clustering: SKATER approach**
+To prove that our observation is true, the Moran’s I test will be performed.
 
-### Converting into SpatialPolygonsDataFrame
-
-First, we need to convert shan_sf into SpatialPolygonsDataFrame. This is because the SKATER function only supports sp objects such as SpatialPolygonDataFrame.
+Compute the distance-based weight matrix:
 
 ```{r}
-shan_sp <- as_Spatial(shan_sf)
+nb <- dnearneigh(coordinates(condo_resale.sp), 0, 1500, longlat = FALSE)
+summary(nb)
 ```
 
-### Computing Neighbour List
+Convert the output into a spatial weights:
 
 ```{r}
-shan.nb <- poly2nb(shan_sp)
-summary(shan.nb)
+nb_lw <- nb2listw(nb, style = 'W')
+summary(nb_lw)
 ```
 
-Plot: The first plot command gives the boundaries. This is followed by the plot of the neighbour list object, with coordinates applied to the original SpatialPolygonDataFrame (Shan state township boundaries) to extract the centroids of the polygons. These are used as the nodes for the graph representation. We also set the color to blue and specify add=TRUE to plot the network on top of the boundaries.
+Perform Moran’s I test:
 
 ```{r}
-plot(shan_sp, 
-     border=grey(0.5))
-plot(shan.nb, 
-     coordinates(shan_sp), 
-     col="blue", 
-     add=TRUE)
+lm.morantest(condo.mlr1, nb_lw)
 ```
 
-::: callout-note
-If you plot the network first and then the boundaries, some of the areas will be clipped.
-:::
+## **8. Building Hedonic Pricing Models using GWmodel**
 
-### Computing minimum spanning tree
+### Building Fixed Bandwidth GWR Model
 
-Calculate edge costs:
+In the code chunk below, bw.gwr() of GWModel package is used to determine the optimal fixed bandwidth to use in the model which is why the argument adaptive is set to FALSE.
 
 ```{r}
-lcosts <- nbcosts(shan.nb, shan_ict)
+bw.fixed <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD + 
+                     PROX_CHILDCARE + PROX_ELDERLYCARE  + PROX_URA_GROWTH_AREA + 
+                     PROX_MRT   + PROX_PARK + PROX_PRIMARY_SCH + 
+                     PROX_SHOPPING_MALL + PROX_BUS_STOP + NO_Of_UNITS + 
+                     FAMILY_FRIENDLY + FREEHOLD, 
+                   data=condo_resale.sp, 
+                   approach="CV", 
+                   kernel="gaussian", 
+                   adaptive=FALSE, 
+                   longlat=FALSE)
 ```
 
-Next, we incorporate these costs into a weights object in the same way as the calculation of inversed distance weights. In other words, we convert the neighbour list to a list weights object by specifying the newly computed lcosts as the weights.
+The recommended bandwidth is: 971.3405 metres
 
-::: callout-note
-Note that we specify the style as B to make sure the cost values are not row-standardised.
-:::
+Now we can calibrate the gwr model using fixed bandwidth and gaussian kernel.
 
 ```{r}
-shan.w <- nb2listw(shan.nb, 
-                   lcosts, 
-                   style="B")
-summary(shan.w)
+gwr.fixed <- gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD + 
+                         PROX_CHILDCARE + PROX_ELDERLYCARE  + PROX_URA_GROWTH_AREA + 
+                         PROX_MRT   + PROX_PARK + PROX_PRIMARY_SCH + 
+                         PROX_SHOPPING_MALL + PROX_BUS_STOP + NO_Of_UNITS + 
+                         FAMILY_FRIENDLY + FREEHOLD, 
+                       data=condo_resale.sp, 
+                       bw=bw.fixed, 
+                       kernel = 'gaussian', 
+                       longlat = FALSE)
 ```
 
-The minimum spanning tree is computed by with the mstree() function of the spdep package.
+The output is saved in a list of class “gwrm”. The code below can be used to display the model output.
 
 ```{r}
-shan.mst <- mstree(shan.w)
+gwr.fixed
 ```
 
-Checking class and dimension:
+### Building Adaptive Bandwidth GWR Model
+
+Set the adaptive argument to TRUE.
 
 ```{r}
-class(shan.mst)
+bw.adaptive <- bw.gwr(formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
+                        PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE    + 
+                        PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK + 
+                        PROX_PRIMARY_SCH + PROX_SHOPPING_MALL   + PROX_BUS_STOP + 
+                        NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD, 
+                      data=condo_resale.sp, 
+                      approach="CV", 
+                      kernel="gaussian", 
+                      adaptive=TRUE, 
+                      longlat=FALSE)
+```
+
+Now, we can calibrate the gwr-based hedonic pricing model by using adaptive bandwidth and gaussian kernel
+
+```{r}
+gwr.adaptive <- gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + 
+                            PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE + 
+                            PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK + 
+                            PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + PROX_BUS_STOP + 
+                            NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD, 
+                          data=condo_resale.sp, bw=bw.adaptive, 
+                          kernel = 'gaussian', 
+                          adaptive=TRUE, 
+                          longlat = FALSE)
+```
+
+Viewing the output:
+
+```{r}
+gwr.adaptive
+```
+
+### Visualising GWR Output
+
+In addition to regression residuals, the output feature class table includes fields for observed and predicted y values, condition number (cond), Local R2, residuals, and explanatory variable coefficients and standard errors. These are all stored in a SpatialPointsDataFrame or SpatialPolygonsDataFrame object integrated with fit.points, GWR coefficient estimates, y value, predicted values, coefficient standard errors and t-values in its “data” slot in an object called SDF found in the output list.
+
+-   Condition Number: this diagnostic evaluates local collinearity. In the presence of strong local collinearity, results become unstable. Results associated with condition numbers larger than 30 may be unreliable.
+
+-   Local R2: these values range between 0.0 and 1.0 and indicate how well the local regression model fits observed y values. Very low values indicate the local model is performing poorly. Mapping the Local R2 values to see where GWR predicts well and where it predicts poorly may provide clues about important variables that may be missing from the regression model.
+
+-   Predicted: these are the estimated (or fitted) y values computed by GWR.
+
+-   Residuals: to obtain the residual values, the fitted y values are subtracted from the observed y values. Standardized residuals have a mean of zero and a standard deviation of 1. A cold-to-hot rendered map of standardized residuals can be produce by using these values.
+
+-   Coefficient Standard Error: these values measure the reliability of each coefficient estimate. Confidence in those estimates are higher when standard errors are small in relation to the actual coefficient values. Large standard errors may indicate problems with local collinearity.
+
+### Converting SDF into sf data.frame
+
+To visualise the fields in SDF, we need to first covert it into sf data.frame.
+
+```{r}
+condo_resale.sf.adaptive <- st_as_sf(gwr.adaptive$SDF) %>%
+  st_transform(crs=3414)
 ```
 
 ```{r}
-dim(shan.mst)
+condo_resale.sf.adaptive.svy21 <- st_transform(condo_resale.sf.adaptive, 3414)
+condo_resale.sf.adaptive.svy21  
 ```
 
-Note that the dimension is 54 and not 55. This is because the minimum spanning tree consists of n-1 edges (links) in order to traverse all the nodes.
+```{r}
+gwr.adaptive.output <- as.data.frame(gwr.adaptive$SDF)
+condo_resale.sf.adaptive <- cbind(condo_resale.res.sf, as.matrix(gwr.adaptive.output))
+```
 
 Displaying content:
 
 ```{r}
-head(shan.mst)
-```
-
-Plot:
-
-```{r}
-plot(shan_sp, border=gray(.5))
-plot.mst(shan.mst, 
-         coordinates(shan_sp), 
-         col="blue", 
-         cex.lab=0.7, 
-         cex.circles=0.005, 
-         add=TRUE)
-```
-
-### Computing spatially constrained clusters using SKATER method
-
-The skater() takes three mandatory arguments: - the first two columns of the MST matrix (i.e. not the cost) - the data matrix (to update the costs as units are being grouped), and - the number of cuts.
-
-::: callout-note
-It is set to one less than the number of clusters. So, the value specified is not the number of clusters, but the number of cuts in the graph, one less than the number of clusters.
-:::
-
-```{r}
-clust6 <- spdep::skater(edges = shan.mst[,1:2], 
-                 data = shan_ict, 
-                 method = "euclidean", 
-                 ncuts = 5)
-```
-
-Display contents:
-
-```{r}
-str(clust6)
-```
-
-Check cluster assignment:
-
-```{r}
-ccs6 <- clust6$groups
-ccs6
-```
-
-We can find out how many observations are in each cluster by means of the table command.
-
-```{r}
-table(ccs6)
-```
-
-For example, the first list has a node with dimension 22, which is also the number of observations in the first cluster.
-
-Plot:
-
-```{r}
-plot(shan_sp, border=gray(.5))
-plot(clust6, 
-     coordinates(shan_sp), 
-     cex.lab=.7,
-     groups.colors=c("red","green","blue", "brown", "pink"),
-     cex.circles=0.005, 
-     add=TRUE)
-```
-
-### Visualising the clusters in choropleth map
-
-```{r}
-groups_mat <- as.matrix(clust6$groups)
-shan_sf_spatialcluster <- cbind(shan_sf_cluster, as.factor(groups_mat)) %>%
-  rename(`SP_CLUSTER`=`as.factor.groups_mat.`)
-qtm(shan_sf_spatialcluster, "SP_CLUSTER")
-```
-
-For easy comparison, it will be better to place both the hierarchical clustering and spatially constrained hierarchical clustering maps next to each other.
-
-```{r}
-hclust.map <- qtm(shan_sf_cluster,
-                  "CLUSTER") + 
-  tm_borders(alpha = 0.5) 
-
-shclust.map <- qtm(shan_sf_spatialcluster,
-                   "SP_CLUSTER") + 
-  tm_borders(alpha = 0.5) 
-
-tmap_arrange(hclust.map, shclust.map,
-             asp=NA, ncol=2)
-```
-
-## **9. Spatially Constrained Clustering: ClustGeo Method**
-
-ClustGeo package is an R package specially designed to support spatially constrained cluster analysis. More specifically, it provides a Ward-like hierarchical clustering algorithm called hclustgeo() including spatial/geographical constraints.
-
-### Ward-like hierarchical clustering: ClustGeo
-
-To perform non-spatially constrained hierarchical clustering, we only need to provide the function a dissimilarity matrix.
-
-```{r}
-nongeo_cluster <- hclustgeo(proxmat)
-plot(nongeo_cluster, cex = 0.5)
-rect.hclust(nongeo_cluster, 
-            k = 6, 
-            border = 2:5)
-```
-
-::: callout-note
-Note that the dissimilarity matrix must be an object of class dist, i.e. an object obtained with the function dist()
-:::
-
-Similarly, we can plot the clusters on a categorical area shaded map.
-
-```{r}
-groups <- as.factor(cutree(nongeo_cluster, k=6))
+glimpse(condo_resale.sf.adaptive)
 ```
 
 ```{r}
-shan_sf_ngeo_cluster <- cbind(shan_sf, as.matrix(groups)) %>%
-  rename(`CLUSTER` = `as.matrix.groups.`)
+summary(gwr.adaptive$SDF$yhat)
+```
+
+### Visualising local R2
+
+Interactive point symbol map:
+
+```{r}
+tmap_mode("view")
+tm_shape(mpsz_svy21)+
+  tm_polygons(alpha = 0.1) +
+tm_shape(condo_resale.sf.adaptive) +  
+  tm_dots(col = "Local_R2",
+          border.col = "gray60",
+          border.lwd = 1) +
+  tm_view(set.zoom.limits = c(11,14))
 ```
 
 ```{r}
-qtm(shan_sf_ngeo_cluster, "CLUSTER")
+tmap_mode("plot")
 ```
 
-### Spatially Constrained Hierarchical Clustering
-
-Before we can perform spatially constrained hierarchical clustering, a spatial distance matrix must be derived by using st_distance().
+### Visualising coefficient estimates
 
 ```{r}
-dist <- st_distance(shan_sf, shan_sf)
-distmat <- as.dist(dist)
-```
+tmap_mode("view")
+AREA_SQM_SE <- tm_shape(mpsz_svy21)+
+  tm_polygons(alpha = 0.1) +
+tm_shape(condo_resale.sf.adaptive) +  
+  tm_dots(col = "AREA_SQM_SE",
+          border.col = "gray60",
+          border.lwd = 1) +
+  tm_view(set.zoom.limits = c(11,14))
 
-Next, choicealpha() will be used to determine a suitable value for the mixing parameter alpha.
+AREA_SQM_TV <- tm_shape(mpsz_svy21)+
+  tm_polygons(alpha = 0.1) +
+tm_shape(condo_resale.sf.adaptive) +  
+  tm_dots(col = "AREA_SQM_TV",
+          border.col = "gray60",
+          border.lwd = 1) +
+  tm_view(set.zoom.limits = c(11,14))
 
-```{r}
-cr <- choicealpha(proxmat, distmat, range.alpha = seq(0, 1, 0.1), K=6, graph = TRUE)
-```
-
-With reference to the graphs above, alpha = 0.3 will be used.
-
-```{r}
-clustG <- hclustgeo(proxmat, distmat, alpha = 0.3)
-```
-
-```{r}
-# derive cluster object
-groups <- as.factor(cutree(clustG, k=6))
-```
-
-```{r}
-# bind the group list with shan_sf polygon feature data frame
-shan_sf_Gcluster <- cbind(shan_sf, as.matrix(groups)) %>%
-  rename(`CLUSTER` = `as.matrix.groups.`)
+tmap_arrange(AREA_SQM_SE, AREA_SQM_TV, 
+             asp=1, ncol=2,
+             sync = TRUE)
 ```
 
 ```{r}
-# plot
-qtm(shan_sf_Gcluster, "CLUSTER")
+tmap_mode("plot")
 ```
 
-## **10. Visual Interpretation of Clusters**
-
-### Visualising individual clustering variable
+### By URA Plannign Region
 
 ```{r}
-ggplot(data = shan_sf_ngeo_cluster,
-       aes(x = CLUSTER, y = RADIO_PR)) +
-  geom_boxplot()
-```
-
-The boxplot reveals Cluster 3 displays the highest mean for Radio Ownership Per Thousand Household.
-
-### Multivariate Visualisation
-
-```{r}
-ggparcoord(data = shan_sf_ngeo_cluster, 
-           columns = c(17:21), 
-           scale = "globalminmax",
-           alphaLines = 0.2,
-           boxplot = TRUE, 
-           title = "Multiple Parallel Coordinates Plots of ICT Variables by Cluster") +
-  facet_grid(~ CLUSTER) + 
-  theme(axis.text.x = element_text(angle = 30))
-```
-
-The parallel coordinate plot above reveals that households in Cluster 4 townships tend to own the highest number of TV and mobile-phone. On the other hand, households in Cluster 5 tends to own the lowest of all the five ICT.
-
-Lastly, we can also compute the summary statistics such as mean, median, sd, etc to complement the visual interpretation.
-
-```{r}
-shan_sf_ngeo_cluster %>% 
-  st_set_geometry(NULL) %>%
-  group_by(CLUSTER) %>%
-  summarise(mean_RADIO_PR = mean(RADIO_PR),
-            mean_TV_PR = mean(TV_PR),
-            mean_LLPHONE_PR = mean(LLPHONE_PR),
-            mean_MPHONE_PR = mean(MPHONE_PR),
-            mean_COMPUTER_PR = mean(COMPUTER_PR))
+tm_shape(mpsz_svy21[mpsz_svy21$REGION_N=="CENTRAL REGION", ])+
+  tm_polygons()+
+tm_shape(condo_resale.sf.adaptive) + 
+  tm_bubbles(col = "Local_R2",
+           size = 0.15,
+           border.col = "gray60",
+           border.lwd = 1)
 ```
